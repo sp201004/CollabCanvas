@@ -3,13 +3,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConnectionStatus } from "./connection-status";
+import { PerformanceMetrics } from "./performance-metrics";
 
 interface RoomHeaderProps {
   roomId: string;
   isConnected: boolean;
+  socket?: any;
 }
 
-export function RoomHeader({ roomId, isConnected }: RoomHeaderProps) {
+export function RoomHeader({ roomId, isConnected, socket }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {
@@ -34,6 +36,8 @@ export function RoomHeader({ roomId, isConnected }: RoomHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Performance metrics placed near connection status for quick visibility */}
+        <PerformanceMetrics socket={socket} isConnected={isConnected} />
         <ConnectionStatus isConnected={isConnected} />
         
         <Tooltip>

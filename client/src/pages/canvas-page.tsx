@@ -8,7 +8,6 @@ import { UserPresence } from "@/components/user-presence";
 import { CursorOverlay } from "@/components/cursor-overlay";
 import { RoomHeader } from "@/components/room-header";
 import { UsernameDialog } from "@/components/username-dialog";
-import { PerformanceMetrics } from "@/components/performance-metrics";
 import { useSocket } from "@/hooks/use-socket";
 import type { DrawingTool, Point, Stroke, User, CursorUpdate } from "@shared/schema";
 
@@ -157,7 +156,7 @@ export default function CanvasPage() {
 
   return (
     <div className="flex flex-col h-screen bg-background" data-testid="canvas-page">
-      <RoomHeader roomId={roomId} isConnected={isConnected} />
+      <RoomHeader roomId={roomId} isConnected={isConnected} socket={socket} />
       
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left sidebar: Canva-inspired spacious width for comfortable controls */}
@@ -246,8 +245,6 @@ export default function CanvasPage() {
           </div>
         )}
 
-        {/* Performance metrics - FPS counter and network latency indicator */}
-        <PerformanceMetrics socket={socket} isConnected={isConnected} />
       </div>
     </div>
   );
