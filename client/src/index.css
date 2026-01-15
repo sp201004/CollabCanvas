@@ -286,3 +286,59 @@
     inset: -1px;
   }
 }
+
+/* Size slider - larger track and thumb for better usability */
+.size-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: hsl(var(--muted));
+  outline: none;
+  transition: background 0.15s ease;
+}
+
+/* Slider thumb - larger for easier grabbing */
+.size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: hsl(var(--foreground));
+  cursor: grab;
+  border: 2px solid hsl(var(--background));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease;
+}
+
+.size-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.size-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+/* Firefox thumb styling */
+.size-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: hsl(var(--foreground));
+  cursor: grab;
+  border: 2px solid hsl(var(--background));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.size-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+/* Firefox track styling */
+.size-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: hsl(var(--muted));
+}

@@ -10,22 +10,22 @@ export function StrokeWidthSelector({
   currentColor,
 }: StrokeWidthSelectorProps) {
   return (
-    <div className="flex flex-col gap-2 p-2 bg-card border border-card-border rounded-lg" data-testid="stroke-width-selector">
+    <div className="flex flex-col gap-3 p-2 bg-card border border-card-border rounded-lg" data-testid="stroke-width-selector">
       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-center">Size</span>
       
-      {/* Size preview - centered visual feedback */}
-      <div className="flex items-center justify-center h-10">
+      {/* Size preview - larger area for clear visual feedback */}
+      <div className="flex items-center justify-center h-12 bg-muted/30 rounded-md">
         <div
-          className="rounded-full transition-all duration-100 border border-border"
+          className="rounded-full transition-all duration-150 shadow-sm"
           style={{
-            width: `${Math.max(Math.min(currentWidth, 28), 4)}px`,
-            height: `${Math.max(Math.min(currentWidth, 28), 4)}px`,
+            width: `${Math.max(Math.min(currentWidth, 32), 6)}px`,
+            height: `${Math.max(Math.min(currentWidth, 32), 6)}px`,
             backgroundColor: currentColor,
           }}
         />
       </div>
       
-      {/* Range slider - uses onInput for real-time updates while dragging */}
+      {/* Larger slider - increased height and custom styling for easier grabbing */}
       <input
         type="range"
         min="1"
@@ -33,14 +33,17 @@ export function StrokeWidthSelector({
         value={currentWidth}
         onInput={(e) => onWidthChange(Number((e.target as HTMLInputElement).value))}
         onChange={(e) => onWidthChange(Number(e.target.value))}
-        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+        className="size-slider w-full cursor-pointer"
         style={{ accentColor: currentColor }}
         aria-label={`Stroke width: ${currentWidth}px`}
         data-testid="input-stroke-width"
       />
       
-      {/* Size value label */}
-      <span className="text-[10px] text-center font-medium text-foreground">{currentWidth}px</span>
+      {/* Clear size value label */}
+      <div className="flex items-center justify-center gap-1 bg-muted/50 rounded py-1">
+        <span className="text-xs font-semibold text-foreground">{currentWidth}</span>
+        <span className="text-[10px] text-muted-foreground">px</span>
+      </div>
     </div>
   );
 }
