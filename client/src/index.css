@@ -342,3 +342,14 @@
   border-radius: 4px;
   background: hsl(var(--muted));
 }
+
+/* Number input for size - clean appearance without spin buttons */
+.size-number-input {
+  -moz-appearance: textfield;
+}
+
+.size-number-input::-webkit-outer-spin-button,
+.size-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
