@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 interface StrokeWidthSelectorProps {
   currentWidth: number;
   onWidthChange: (width: number) => void;
@@ -18,12 +20,23 @@ export function StrokeWidthSelector({
   onWidthChange,
   currentColor,
 }: StrokeWidthSelectorProps) {
-  // Handle number input - fires on every keystroke for real-time sync
-  // FIX: Using onInput instead of only onChange to update immediately as user types
-  const handleNumberInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const rawValue = (e.target as HTMLInputElement).value;
-    // Allow empty field while typing, but don't update state with invalid values
-    if (rawValue === "") return;
+  // FIX: Use local state for number input to allow multi-digit typing
+  // Previous bug: controlled input immediately synced to parent state on every keystroke,
+  // causing single-digit lock because React re-rendered with clamped value
+  const [inputValue, setInputValue] = useState(String(currentWidth));
+
+  // Sync local input when parent state changes (e.g., from slider)
+  useEffect(() => {
+    setInputValue(String(currentWidth));
+  }, [currentWidth]);
+
+  // Handle number input - allow typing freely without immediate clamping
+  const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // Allow empty or partial values while typing
+    setInputValue(rawValue);
+    
+    // Only update parent state if valid complete number in range
     const value = parseInt(rawValue, 10);
     if (!isNaN(value) && value >= MIN_SIZE && value <= MAX_SIZE) {
       onWidthChange(value);
@@ -31,12 +44,16 @@ export function StrokeWidthSelector({
   };
 
   // Handle blur - clamp to valid range when user leaves the field
-  const handleNumberBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
+  const handleNumberBlur = () => {
+    const value = parseInt(inputValue, 10);
     if (isNaN(value) || value < MIN_SIZE) {
       onWidthChange(MIN_SIZE);
+      setInputValue(String(MIN_SIZE));
     } else if (value > MAX_SIZE) {
       onWidthChange(MAX_SIZE);
+      setInputValue(String(MAX_SIZE));
+    } else {
+      setInputValue(String(value));
     }
   };
 
@@ -75,17 +92,17 @@ export function StrokeWidthSelector({
         data-testid="input-stroke-width-slider"
       />
       
-      {/* Number input - click to type exact size value, syncs with slider */}
-      {/* FIX: Added onInput for real-time updates + onBlur for clamping */}
+      {/* Number input - uses local state to allow multi-digit typing */}
+      {/* FIX: Local state prevents immediate re-render with clamped value */}
       <div className="flex items-center justify-center gap-1">
         <input
-          type="number"
-          min={MIN_SIZE}
-          max={MAX_SIZE}
-          value={currentWidth}
-          onInput={handleNumberInput}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={inputValue}
+          onChange={handleNumberInput}
           onBlur={handleNumberBlur}
-          className="size-number-input w-12 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-1 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="size-number-input w-14 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-1 focus:outline-none focus:ring-1 focus:ring-primary"
           aria-label="Stroke width in pixels"
           data-testid="input-stroke-width-number"
         />
