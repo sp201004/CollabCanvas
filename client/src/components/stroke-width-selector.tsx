@@ -63,8 +63,9 @@ export function StrokeWidthSelector({
   };
 
   return (
-    <div className="flex flex-col gap-3 p-2 bg-card border border-card-border rounded-lg" data-testid="stroke-width-selector">
-      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-center">Size</span>
+    <div className="flex flex-col gap-2.5 p-2.5 bg-card border border-card-border rounded-lg" data-testid="stroke-width-selector">
+      {/* Section header - Canva-style subtle label */}
+      <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">Size</span>
       
       {/* Size preview - visual feedback showing current brush size */}
       <div className="flex items-center justify-center h-12 bg-muted/30 rounded-md">

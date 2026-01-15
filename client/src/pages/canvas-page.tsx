@@ -157,8 +157,8 @@ export default function CanvasPage() {
       <RoomHeader roomId={roomId} isConnected={isConnected} />
       
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left sidebar: wider fixed width for better control spacing */}
-        <aside className="w-20 p-2 flex flex-col gap-2 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
+        {/* Left sidebar: Canva-inspired spacious width for comfortable controls */}
+        <aside className="w-[88px] p-3 flex flex-col gap-3 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
           <ToolPanel
             currentTool={currentTool}
             onToolChange={setCurrentTool}
