@@ -11,13 +11,15 @@ import { UsernameDialog } from "@/components/username-dialog";
 import { useSocket } from "@/hooks/use-socket";
 import type { DrawingTool, Point, Stroke, User, CursorUpdate } from "@shared/schema";
 
-function generateRoomId(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+function getRoomIdFromUrl(): string {
+  const params = new URLSearchParams(window.location.search);
+  // Room ID is required - users should come through landing page or shared link
+  return params.get("room") || "";
 }
 
-function getRoomIdFromUrl(): string | null {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("room");
+// Check if username was set via landing page flow
+function getStoredUsername(): string | null {
+  return sessionStorage.getItem("canvas_username");
 }
 
 const emptySocketReturn = {
@@ -39,10 +41,10 @@ const emptySocketReturn = {
 };
 
 export default function CanvasPage() {
-  const [username, setUsername] = useState<string | null>(null);
-  const [roomId, setRoomId] = useState<string>(() => {
-    return getRoomIdFromUrl() || generateRoomId();
-  });
+  // Check sessionStorage first - username is set by landing page flow
+  // If not found (direct link), show UsernameDialog for proper onboarding
+  const [username, setUsername] = useState<string | null>(() => getStoredUsername());
+  const [roomId, setRoomId] = useState<string>(() => getRoomIdFromUrl());
   const [currentTool, setCurrentTool] = useState<DrawingTool>("brush");
   const [currentColor, setCurrentColor] = useState("#1F2937");
   const [strokeWidth, setStrokeWidth] = useState(5);
@@ -75,11 +77,10 @@ export default function CanvasPage() {
     updateLocalStroke,
   } = username ? socketData : emptySocketReturn;
 
+  // Redirect to landing page if no room in URL (shouldn't happen normally)
   useEffect(() => {
-    if (!getRoomIdFromUrl()) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("room", roomId);
-      window.history.replaceState({}, "", url.toString());
+    if (!roomId) {
+      window.location.href = "/";
     }
   }, [roomId]);
 
@@ -118,7 +119,10 @@ export default function CanvasPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
+  // Save username to sessionStorage when entered via dialog (for direct link users)
+  // This ensures consistent behavior with landing page flow
   const handleUsernameSubmit = useCallback((name: string) => {
+    sessionStorage.setItem("canvas_username", name);
     setUsername(name);
   }, []);
 
