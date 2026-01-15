@@ -13,31 +13,33 @@ export function StrokeWidthSelector({
     <div className="flex flex-col gap-2 p-2 bg-card border border-card-border rounded-lg" data-testid="stroke-width-selector">
       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-center">Size</span>
       
-      {/* Size preview - shows current stroke size visually */}
-      <div className="flex items-center justify-center h-8">
+      {/* Size preview - centered visual feedback */}
+      <div className="flex items-center justify-center h-10">
         <div
-          className="rounded-full transition-all duration-100"
+          className="rounded-full transition-all duration-100 border border-border"
           style={{
-            width: `${Math.min(currentWidth, 24)}px`,
-            height: `${Math.min(currentWidth, 24)}px`,
+            width: `${Math.max(Math.min(currentWidth, 28), 4)}px`,
+            height: `${Math.max(Math.min(currentWidth, 28), 4)}px`,
             backgroundColor: currentColor,
           }}
         />
       </div>
       
-      {/* Vertical slider for narrow toolbar - prevents overflow */}
+      {/* Range slider - full width within container */}
       <input
         type="range"
         min="1"
         max="30"
         value={currentWidth}
         onChange={(e) => onWidthChange(Number(e.target.value))}
-        className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-foreground"
+        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+        style={{ accentColor: currentColor }}
         aria-label={`Stroke width: ${currentWidth}px`}
         data-testid="input-stroke-width"
       />
       
-      <span className="text-[9px] text-center text-muted-foreground">{currentWidth}px</span>
+      {/* Size value label */}
+      <span className="text-[10px] text-center font-medium text-foreground">{currentWidth}px</span>
     </div>
   );
 }

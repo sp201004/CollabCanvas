@@ -106,22 +106,25 @@ export function ToolPanel({
       {/* Separator */}
       <div className="w-full h-px bg-border my-1" />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onClear}
-            className="h-8 w-8 text-destructive hover:text-destructive"
-            data-testid="button-clear-canvas"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">
-          <p>Clear Canvas</p>
-        </TooltipContent>
-      </Tooltip>
+      {/* Clear button - centered like other groups */}
+      <div className="flex justify-center">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onClear}
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              data-testid="button-clear-canvas"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Clear Canvas</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }
