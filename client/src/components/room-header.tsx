@@ -71,7 +71,7 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
   return (
     <header className="flex items-center justify-between h-12 sm:h-14 md:h-16 px-2 sm:px-4 md:px-6 bg-card border-b border-card-border" data-testid="room-header">
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
-        <h1 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight">Canvas</h1>
+        <h1 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight">CollabCanvas</h1>
         
         {/* Current room display */}
         <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 bg-muted rounded-md">
