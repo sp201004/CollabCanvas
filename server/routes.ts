@@ -121,6 +121,13 @@ export async function registerRoutes(
       }
     });
 
+    // Ping handler for latency measurement - responds immediately with callback
+    socket.on("ping", (callback: () => void) => {
+      if (typeof callback === "function") {
+        callback();
+      }
+    });
+
     socket.on("disconnect", () => {
       if (currentRoomId && currentUserId) {
         roomManager.removeUserFromRoom(currentRoomId, currentUserId);

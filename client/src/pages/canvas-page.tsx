@@ -8,6 +8,7 @@ import { UserPresence } from "@/components/user-presence";
 import { CursorOverlay } from "@/components/cursor-overlay";
 import { RoomHeader } from "@/components/room-header";
 import { UsernameDialog } from "@/components/username-dialog";
+import { PerformanceMetrics } from "@/components/performance-metrics";
 import { useSocket } from "@/hooks/use-socket";
 import type { DrawingTool, Point, Stroke, User, CursorUpdate } from "@shared/schema";
 
@@ -26,6 +27,7 @@ const emptySocketReturn = {
   users: [] as User[],
   strokes: [] as Stroke[],
   cursors: new Map<string, CursorUpdate>(),
+  socket: null,
   sendCursorMove: () => {},
   startStroke: () => {},
   addStrokePoint: () => {},
@@ -62,6 +64,7 @@ export default function CanvasPage() {
     users,
     strokes,
     cursors,
+    socket,
     sendCursorMove,
     startStroke,
     addStrokePoint,
@@ -242,6 +245,9 @@ export default function CanvasPage() {
             </aside>
           </div>
         )}
+
+        {/* Performance metrics - FPS counter and network latency indicator */}
+        <PerformanceMetrics socket={socket} isConnected={isConnected} />
       </div>
     </div>
   );

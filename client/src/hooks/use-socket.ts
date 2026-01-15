@@ -14,6 +14,7 @@ interface UseSocketReturn {
   users: User[];
   strokes: Stroke[];
   cursors: Map<string, CursorUpdate>;
+  socket: ReturnType<typeof getSocket> | null;
   sendCursorMove: (position: Point | null, isDrawing: boolean) => void;
   startStroke: (stroke: Stroke) => void;
   addStrokePoint: (strokeId: string, point: Point) => void;
@@ -245,6 +246,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     users,
     strokes,
     cursors,
+    socket: enabled && username ? getSocket() : null,
     sendCursorMove,
     startStroke,
     addStrokePoint,
