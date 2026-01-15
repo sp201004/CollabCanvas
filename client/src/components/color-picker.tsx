@@ -91,11 +91,12 @@ export function ColorPicker({ currentColor, onColorChange }: ColorPickerProps) {
       </div>
       {/* Separator before custom picker */}
       <div className="w-full h-px bg-border" />
-      {/* Custom color picker - compact */}
+      {/* Custom color picker - uses onInput for real-time updates while dragging */}
       <label className="flex items-center justify-center gap-1.5 cursor-pointer">
         <input
           type="color"
           value={currentColor}
+          onInput={(e) => onColorChange((e.target as HTMLInputElement).value)}
           onChange={(e) => onColorChange(e.target.value)}
           className="w-5 h-5 rounded cursor-pointer border-0 p-0"
           data-testid="input-custom-color"

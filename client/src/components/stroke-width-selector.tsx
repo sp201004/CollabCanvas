@@ -25,12 +25,13 @@ export function StrokeWidthSelector({
         />
       </div>
       
-      {/* Range slider - full width within container */}
+      {/* Range slider - uses onInput for real-time updates while dragging */}
       <input
         type="range"
         min="1"
         max="30"
         value={currentWidth}
+        onInput={(e) => onWidthChange(Number((e.target as HTMLInputElement).value))}
         onChange={(e) => onWidthChange(Number(e.target.value))}
         className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
         style={{ accentColor: currentColor }}
