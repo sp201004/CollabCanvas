@@ -102,12 +102,24 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
           {/* Join room: toggle input visibility */}
           {showJoinInput ? (
             <div className="flex items-center gap-1">
+              {/* Input-level + submit-level validation both needed:
+                  maxLength stops typing beyond 6, onChange filters invalid chars,
+                  submit validation is final safety check before socket.join */}
               <Input
                 type="text"
                 placeholder="Room ID"
                 value={joinRoomId}
-                onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
+                onChange={(e) => {
+                  // Strip invalid chars and limit to 6 - only allow A-Z, 0-9
+                  const filtered = e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 6);
+                  setJoinRoomId(filtered);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && isJoinCodeValid && handleJoinRoom()}
+                maxLength={6}
+                pattern="[A-Z0-9]{6}"
                 className="h-7 w-20 sm:w-24 text-xs font-mono uppercase"
                 autoFocus
                 data-testid="input-join-room"

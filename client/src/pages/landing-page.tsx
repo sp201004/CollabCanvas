@@ -167,14 +167,25 @@ export default function LandingPage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   Room Code
                 </label>
+                {/* Input-level restriction: maxLength prevents >6 chars at HTML level
+                    onChange filters invalid chars - both are needed because:
+                    1) maxLength stops typing, but paste could bypass
+                    2) onChange regex ensures only valid chars accepted */}
                 <Input
                   placeholder="Enter room code (e.g., ABC123)"
                   value={roomCode}
                   onChange={(e) => {
-                    setRoomCode(e.target.value.toUpperCase());
+                    // Strip invalid chars and limit to 6 - only allow A-Z, 0-9
+                    const filtered = e.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, "")
+                      .slice(0, 6);
+                    setRoomCode(filtered);
                     setError("");
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
+                  onKeyDown={(e) => e.key === "Enter" && isRoomCodeValid && handleJoinRoom()}
+                  maxLength={6}
+                  pattern="[A-Z0-9]{6}"
                   className="text-center text-lg h-12 font-mono uppercase"
                   autoFocus
                   data-testid="input-landing-roomcode"
