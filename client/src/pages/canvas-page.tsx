@@ -157,8 +157,8 @@ export default function CanvasPage() {
       <RoomHeader roomId={roomId} isConnected={isConnected} />
       
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left sidebar: narrower on mobile, scrollable */}
-        <aside className="w-14 sm:w-16 md:w-20 p-1.5 sm:p-2 md:p-3 flex flex-col gap-2 md:gap-3 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
+        {/* Left sidebar: fixed width, scrollable to prevent cutoff */}
+        <aside className="w-16 p-2 flex flex-col gap-2 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
           <ToolPanel
             currentTool={currentTool}
             onToolChange={setCurrentTool}
@@ -179,8 +179,8 @@ export default function CanvasPage() {
           />
         </aside>
 
-        {/* Main canvas area: less padding on mobile */}
-        <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-hidden" ref={canvasContainerRef}>
+        {/* Main canvas area: responsive padding */}
+        <main className="flex-1 p-2 md:p-4 overflow-hidden" ref={canvasContainerRef}>
           <div className="relative w-full h-full">
             <DrawingCanvas
               strokes={strokes}

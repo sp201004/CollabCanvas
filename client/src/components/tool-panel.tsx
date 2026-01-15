@@ -23,18 +23,19 @@ export function ToolPanel({
   canRedo,
 }: ToolPanelProps) {
   return (
-    <div className="flex flex-col gap-1 sm:gap-2 p-1.5 sm:p-2 md:p-3 bg-card border border-card-border rounded-lg" data-testid="tool-panel">
-      <div className="flex flex-col gap-0.5 sm:gap-1">
+    <div className="flex flex-col gap-1 p-2 bg-card border border-card-border rounded-lg" data-testid="tool-panel">
+      {/* Drawing tools group - consistent button sizing */}
+      <div className="flex flex-col items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="icon"
               variant={currentTool === "brush" ? "default" : "ghost"}
               onClick={() => onToolChange("brush")}
-              className="h-8 w-8 sm:h-9 sm:w-9"
+              className="h-8 w-8"
               data-testid="button-brush-tool"
             >
-              <Brush className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Brush className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
@@ -48,10 +49,10 @@ export function ToolPanel({
               size="icon"
               variant={currentTool === "eraser" ? "default" : "ghost"}
               onClick={() => onToolChange("eraser")}
-              className="h-8 w-8 sm:h-9 sm:w-9"
+              className="h-8 w-8"
               data-testid="button-eraser-tool"
             >
-              <Eraser className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Eraser className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
@@ -60,9 +61,11 @@ export function ToolPanel({
         </Tooltip>
       </div>
 
-      <div className="w-full h-px bg-border my-0.5 sm:my-1" />
+      {/* Separator */}
+      <div className="w-full h-px bg-border my-1" />
 
-      <div className="flex flex-col gap-0.5 sm:gap-1">
+      {/* Undo/Redo group - centered alignment */}
+      <div className="flex flex-col items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -70,10 +73,10 @@ export function ToolPanel({
               variant="ghost"
               onClick={onUndo}
               disabled={!canUndo}
-              className="h-8 w-8 sm:h-9 sm:w-9"
+              className="h-8 w-8"
               data-testid="button-undo"
             >
-              <Undo2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Undo2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
@@ -88,10 +91,10 @@ export function ToolPanel({
               variant="ghost"
               onClick={onRedo}
               disabled={!canRedo}
-              className="h-8 w-8 sm:h-9 sm:w-9"
+              className="h-8 w-8"
               data-testid="button-redo"
             >
-              <Redo2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Redo2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
@@ -100,7 +103,8 @@ export function ToolPanel({
         </Tooltip>
       </div>
 
-      <div className="w-full h-px bg-border my-0.5 sm:my-1" />
+      {/* Separator */}
+      <div className="w-full h-px bg-border my-1" />
 
       <Tooltip>
         <TooltipTrigger asChild>
@@ -108,10 +112,10 @@ export function ToolPanel({
             size="icon"
             variant="ghost"
             onClick={onClear}
-            className="h-8 w-8 sm:h-9 sm:w-9 text-destructive hover:text-destructive"
+            className="h-8 w-8 text-destructive hover:text-destructive"
             data-testid="button-clear-canvas"
           >
-            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">
