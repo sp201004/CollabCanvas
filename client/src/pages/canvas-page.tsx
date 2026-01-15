@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Users } from "lucide-react";
 import { DrawingCanvas } from "@/components/drawing-canvas";
 import { ToolPanel } from "@/components/tool-panel";
 import { ColorPicker } from "@/components/color-picker";
@@ -45,6 +46,8 @@ export default function CanvasPage() {
   const [currentColor, setCurrentColor] = useState("#1F2937");
   const [strokeWidth, setStrokeWidth] = useState(5);
   const [canvasRect, setCanvasRect] = useState<DOMRect | null>(null);
+  // Mobile: toggle for users panel visibility
+  const [showUsersPanel, setShowUsersPanel] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   const socketData = useSocket({
@@ -153,8 +156,9 @@ export default function CanvasPage() {
     <div className="flex flex-col h-screen bg-background" data-testid="canvas-page">
       <RoomHeader roomId={roomId} isConnected={isConnected} />
       
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-20 p-3 flex flex-col gap-3 bg-sidebar border-r border-sidebar-border">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left sidebar: narrower on mobile, scrollable */}
+        <aside className="w-14 sm:w-16 md:w-20 p-1.5 sm:p-2 md:p-3 flex flex-col gap-2 md:gap-3 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
           <ToolPanel
             currentTool={currentTool}
             onToolChange={setCurrentTool}
@@ -175,7 +179,8 @@ export default function CanvasPage() {
           />
         </aside>
 
-        <main className="flex-1 p-6 overflow-hidden" ref={canvasContainerRef}>
+        {/* Main canvas area: less padding on mobile */}
+        <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-hidden" ref={canvasContainerRef}>
           <div className="relative w-full h-full">
             <DrawingCanvas
               strokes={strokes}
@@ -199,12 +204,44 @@ export default function CanvasPage() {
           </div>
         </main>
 
-        <aside className="w-64 p-3 flex flex-col gap-3 bg-sidebar border-l border-sidebar-border">
+        {/* Right sidebar: hidden on mobile, toggle button shown instead */}
+        <aside className="hidden md:flex w-48 lg:w-64 p-3 flex-col gap-3 bg-sidebar border-l border-sidebar-border shrink-0">
           <UserPresence
             users={users}
             currentUserId={currentUser?.id || null}
           />
         </aside>
+
+        {/* Mobile: floating users button */}
+        <button
+          onClick={() => setShowUsersPanel(!showUsersPanel)}
+          className="md:hidden fixed bottom-4 right-4 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg"
+          aria-label="Toggle users panel"
+          data-testid="button-toggle-users"
+        >
+          <Users className="w-5 h-5" />
+          {users.length > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center">
+              {users.length}
+            </span>
+          )}
+        </button>
+
+        {/* Mobile: slide-in users panel */}
+        {showUsersPanel && (
+          <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowUsersPanel(false)}>
+            <div className="absolute inset-0 bg-black/30" />
+            <aside 
+              className="absolute right-0 top-0 bottom-0 w-64 p-3 bg-sidebar border-l border-sidebar-border shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <UserPresence
+                users={users}
+                currentUserId={currentUser?.id || null}
+              />
+            </aside>
+          </div>
+        )}
       </div>
     </div>
   );
