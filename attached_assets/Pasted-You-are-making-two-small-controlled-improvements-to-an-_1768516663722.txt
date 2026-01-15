@@ -1,0 +1,87 @@
+You are making two small, controlled improvements to an existing collaborative canvas application.
+
+VERY IMPORTANT:
+- DO NOT rewrite the app
+- DO NOT refactor logic, architecture, or WebSocket behavior
+- DO NOT add any new libraries
+- Make ONLY minimal, safe, interview-explainable changes
+
+==================================================
+TASK 1: UPDATE PROJECT TITLE EVERYWHERE
+==================================================
+
+NEW PROJECT TITLE (USE EXACTLY):
+"CollabCanvas – Real-Time Collaborative Drawing Canvas"
+
+WHAT TO UPDATE:
+1. Browser tab title (document.title)
+2. Landing / first page main heading
+3. Top header / navbar title (if present)
+4. README.md project title
+5. README.md first description line
+6. Any visible UI text that still shows the old project name
+
+WHAT NOT TO CHANGE:
+- No JS logic changes
+- No CSS redesign
+- No feature changes
+
+RULES:
+- Update text only where the project name appears
+- Keep formatting clean and consistent
+- Add comments only if absolutely necessary
+
+==================================================
+TASK 2: FIX SIZE CONTROL UI ALIGNMENT
+==================================================
+
+PROBLEM:
+- SIZE control elements are overflowing outside their container
+- Slider, number input, and "px" label are misaligned
+- Borders and spacing look broken
+- Overall SIZE section does not look visually contained
+
+EXPECTED CORRECT BEHAVIOR:
+- SIZE control must be fully contained inside its card
+- No element should overflow horizontally or vertically
+- Slider, dot preview, number input, and "px" label must align cleanly
+- Borders should look neat and consistent with the rest of the toolbar
+
+WHAT TO FIX:
+
+1. Container alignment:
+   - Add proper internal padding
+   - Use box-sizing: border-box
+   - Prevent overflow from child elements
+
+2. Slider + number input layout:
+   - Stack elements vertically
+   - Center-align items horizontally
+   - Use consistent spacing (gap)
+
+3. Number input + "px":
+   - Keep input width fixed (no auto expansion)
+   - Align "px" inline with input
+   - Ensure both stay inside the container
+   - Prevent layout push-out
+
+4. Visual polish:
+   - Rounded borders consistent with other toolbar sections
+   - Light background
+   - Clean internal margins
+
+CHANGE RULES:
+- Prefer CSS fixes (flexbox, padding, width, box-sizing)
+- Minimal HTML changes only if unavoidable
+- No JS logic changes
+- Add short comments explaining WHY layout fixes were required
+
+==================================================
+AFTER COMPLETION
+==================================================
+
+- Briefly confirm:
+  1. Where the project title was updated
+  2. That the SIZE control is now properly aligned and contained
+
+Act like a senior frontend engineer doing a clean rename and a precise UI alignment fix.

@@ -63,55 +63,60 @@ export function StrokeWidthSelector({
   };
 
   return (
-    <div className="flex flex-col gap-2.5 p-2.5 bg-card border border-card-border rounded-lg" data-testid="stroke-width-selector">
+    // FIX: Container uses box-sizing border-box with fixed width to prevent overflow
+    // overflow-hidden ensures no child element can break out of rounded container
+    <div 
+      className="flex flex-col gap-2 p-2.5 bg-card border border-card-border rounded-lg w-full box-border overflow-hidden" 
+      style={{ minWidth: 0 }}
+      data-testid="stroke-width-selector"
+    >
       {/* Section header - Canva-style subtle label */}
       <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">Size</span>
       
       {/* Size preview - visual feedback showing current brush size */}
-      <div className="flex items-center justify-center h-12 bg-muted/30 rounded-md">
+      <div className="flex items-center justify-center h-10 bg-muted/30 rounded-md">
         <div
           className="rounded-full transition-all duration-150 shadow-sm"
           style={{
-            width: `${Math.max(Math.min(currentWidth, 32), 6)}px`,
-            height: `${Math.max(Math.min(currentWidth, 32), 6)}px`,
+            width: `${Math.max(Math.min(currentWidth, 28), 6)}px`,
+            height: `${Math.max(Math.min(currentWidth, 28), 6)}px`,
             backgroundColor: currentColor,
           }}
         />
       </div>
       
-      {/* Range slider - drag to change size (1-50px) */}
-      <input
-        type="range"
-        min={MIN_SIZE}
-        max={MAX_SIZE}
-        value={currentWidth}
-        onInput={handleSliderChange}
-        onChange={handleSliderChange}
-        className="size-slider w-full cursor-pointer"
-        style={{ accentColor: currentColor }}
-        aria-label={`Stroke width: ${currentWidth}px`}
-        data-testid="input-stroke-width-slider"
-      />
+      {/* FIX: Slider container with proper width constraint to prevent overflow */}
+      <div className="w-full px-0.5 box-border">
+        <input
+          type="range"
+          min={MIN_SIZE}
+          max={MAX_SIZE}
+          value={currentWidth}
+          onInput={handleSliderChange}
+          onChange={handleSliderChange}
+          className="size-slider w-full cursor-pointer"
+          style={{ accentColor: currentColor }}
+          aria-label={`Stroke width: ${currentWidth}px`}
+          data-testid="input-stroke-width-slider"
+        />
+      </div>
       
-      {/* Number input - uses local state to allow multi-digit typing */}
-      {/* Clamp enforced: 1-50px range for safe brush/eraser sizes */}
-      <div className="flex flex-col items-center gap-1">
-        <div className="flex items-center justify-center gap-1">
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={inputValue}
-            onChange={handleNumberInput}
-            onBlur={handleNumberBlur}
-            className="size-number-input w-14 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-1 focus:outline-none focus:ring-1 focus:ring-primary"
-            aria-label="Stroke width in pixels"
-            data-testid="input-stroke-width-number"
-          />
-          <span className="text-[10px] text-muted-foreground">px</span>
-        </div>
-        {/* Max size hint for user clarity */}
-        <span className="text-[8px] text-muted-foreground/60">max {MAX_SIZE}</span>
+      {/* FIX: Number input row - fixed width input with inline "px" label
+          Input width is clamped to prevent layout push-out */}
+      <div className="flex items-center justify-center gap-1.5">
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={inputValue}
+          onChange={handleNumberInput}
+          onBlur={handleNumberBlur}
+          className="w-10 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-0.5 focus:outline-none focus:ring-1 focus:ring-primary flex-shrink-0"
+          style={{ minWidth: 0, maxWidth: '2.5rem' }}
+          aria-label="Stroke width in pixels"
+          data-testid="input-stroke-width-number"
+        />
+        <span className="text-[10px] text-muted-foreground flex-shrink-0">px</span>
       </div>
     </div>
   );

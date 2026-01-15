@@ -102,9 +102,9 @@ export default function LandingPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Brush className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Collaborative Canvas</CardTitle>
+          <CardTitle className="text-2xl">CollabCanvas</CardTitle>
           <CardDescription>
-            Draw together in real-time with friends and colleagues
+            Real-Time Collaborative Drawing Canvas
           </CardDescription>
         </CardHeader>
 

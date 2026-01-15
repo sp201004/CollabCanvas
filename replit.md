@@ -1,7 +1,7 @@
-# Real-Time Collaborative Drawing Canvas
+# CollabCanvas – Real-Time Collaborative Drawing Canvas
 
 ## Overview
-A multi-user drawing application where multiple people can draw simultaneously on the same canvas with real-time synchronization. Built with React, TypeScript, Socket.io, and HTML5 Canvas.
+CollabCanvas is a multi-user drawing application where multiple people can draw simultaneously on the same canvas with real-time synchronization. Built with React, TypeScript, Socket.io, and HTML5 Canvas.
 
 ## Project Architecture
 
