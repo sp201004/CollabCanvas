@@ -179,8 +179,8 @@ export default function CanvasPage() {
           />
         </aside>
 
-        {/* Main canvas area: responsive padding */}
-        <main className="flex-1 p-2 md:p-4 overflow-hidden" ref={canvasContainerRef}>
+        {/* Main canvas area: Canva-inspired spacious whiteboard with clean margins */}
+        <main className="flex-1 p-3 md:p-5 lg:p-6 overflow-hidden bg-muted/30" ref={canvasContainerRef}>
           <div className="relative w-full h-full">
             <DrawingCanvas
               strokes={strokes}

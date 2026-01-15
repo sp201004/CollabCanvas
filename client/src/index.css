@@ -353,3 +353,14 @@
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* Canva-inspired card styling - soft shadows and subtle borders */
+.bg-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Smooth transitions for toolbar controls */
+.bg-card button,
+.bg-card input {
+  transition: all 0.15s ease;
+}

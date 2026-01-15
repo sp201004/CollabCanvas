@@ -234,8 +234,16 @@ export function DrawingCanvas({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-white rounded-md overflow-hidden shadow-inner"
+      className="relative w-full h-full rounded-lg overflow-hidden shadow-sm border border-border/30"
       data-testid="canvas-container"
+      style={{
+        /* Canva-inspired subtle dotted grid background for spacious whiteboard feel */
+        background: `
+          radial-gradient(circle, #e5e7eb 1px, transparent 1px),
+          linear-gradient(to bottom, #fafafa, #ffffff)
+        `,
+        backgroundSize: '20px 20px, 100% 100%',
+      }}
     >
       <canvas
         ref={canvasRef}
