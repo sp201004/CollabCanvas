@@ -93,20 +93,24 @@ export function StrokeWidthSelector({
       />
       
       {/* Number input - uses local state to allow multi-digit typing */}
-      {/* FIX: Local state prevents immediate re-render with clamped value */}
-      <div className="flex items-center justify-center gap-1">
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={inputValue}
-          onChange={handleNumberInput}
-          onBlur={handleNumberBlur}
-          className="size-number-input w-14 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-1 focus:outline-none focus:ring-1 focus:ring-primary"
-          aria-label="Stroke width in pixels"
-          data-testid="input-stroke-width-number"
-        />
-        <span className="text-[10px] text-muted-foreground">px</span>
+      {/* Clamp enforced: 1-50px range for safe brush/eraser sizes */}
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex items-center justify-center gap-1">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={inputValue}
+            onChange={handleNumberInput}
+            onBlur={handleNumberBlur}
+            className="size-number-input w-14 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-1 focus:outline-none focus:ring-1 focus:ring-primary"
+            aria-label="Stroke width in pixels"
+            data-testid="input-stroke-width-number"
+          />
+          <span className="text-[10px] text-muted-foreground">px</span>
+        </div>
+        {/* Max size hint for user clarity */}
+        <span className="text-[8px] text-muted-foreground/60">max {MAX_SIZE}</span>
       </div>
     </div>
   );
