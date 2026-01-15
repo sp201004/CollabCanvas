@@ -18,6 +18,14 @@ function generateRoomId(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// Room code validation: EXACTLY 6 uppercase alphanumeric characters
+// Prevents malformed codes from being used - must validate BEFORE socket join
+const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
+
+function isValidRoomCode(code: string): boolean {
+  return ROOM_CODE_REGEX.test(code);
+}
+
 export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
   const [joinRoomId, setJoinRoomId] = useState("");
@@ -44,10 +52,11 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
   };
 
   // Join an existing room by navigating to its URL
-  // The socket will automatically leave current room and join the new one
+  // Validates room code format BEFORE any socket connection attempt
   const handleJoinRoom = () => {
     const trimmedId = joinRoomId.trim().toUpperCase();
-    if (trimmedId && trimmedId !== roomId) {
+    // Only allow valid 6-char alphanumeric codes
+    if (isValidRoomCode(trimmedId) && trimmedId !== roomId) {
       const url = new URL(window.location.href);
       url.searchParams.set("room", trimmedId);
       window.location.href = url.toString();
@@ -55,6 +64,9 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
     setShowJoinInput(false);
     setJoinRoomId("");
   };
+
+  // Check if current input is a valid room code (for enabling/disabling button)
+  const isJoinCodeValid = isValidRoomCode(joinRoomId.trim().toUpperCase());
 
   return (
     <header className="flex items-center justify-between h-12 sm:h-14 md:h-16 px-2 sm:px-4 md:px-6 bg-card border-b border-card-border" data-testid="room-header">
@@ -105,7 +117,7 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
                 variant="default"
                 onClick={handleJoinRoom}
                 className="h-7 px-2"
-                disabled={!joinRoomId.trim()}
+                disabled={!isJoinCodeValid}
                 data-testid="button-join-room-submit"
               >
                 Go

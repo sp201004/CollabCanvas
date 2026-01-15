@@ -17,6 +17,14 @@ function getRoomIdFromUrl(): string {
   return params.get("room") || "";
 }
 
+// Room code validation: EXACTLY 6 uppercase alphanumeric characters
+// This validation MUST pass before any socket.join is attempted
+const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
+
+function isValidRoomCode(code: string): boolean {
+  return ROOM_CODE_REGEX.test(code.toUpperCase());
+}
+
 // Check if username was set via landing page flow
 function getStoredUsername(): string | null {
   return sessionStorage.getItem("canvas_username");
@@ -53,10 +61,14 @@ export default function CanvasPage() {
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
+  // Validate room code format - only enable socket if room code is valid
+  // This prevents socket.join with malformed room codes
+  const isRoomValid = isValidRoomCode(roomId);
+
   const socketData = useSocket({
-    roomId,
+    roomId: roomId.toUpperCase(),
     username: username || "",
-    enabled: !!username,
+    enabled: !!username && isRoomValid,
   });
 
   const {
@@ -77,12 +89,13 @@ export default function CanvasPage() {
     updateLocalStroke,
   } = username ? socketData : emptySocketReturn;
 
-  // Redirect to landing page if no room in URL (shouldn't happen normally)
+  // Redirect to landing page if no room or invalid room code in URL
+  // This ensures users can't accidentally join with malformed codes
   useEffect(() => {
-    if (!roomId) {
+    if (!roomId || !isRoomValid) {
       window.location.href = "/";
     }
-  }, [roomId]);
+  }, [roomId, isRoomValid]);
 
   useEffect(() => {
     const updateRect = () => {

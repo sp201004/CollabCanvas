@@ -9,6 +9,21 @@ function generateRoomCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// Room code validation: EXACTLY 6 uppercase alphanumeric characters
+// This prevents malformed codes from being used and ensures consistent format
+const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
+
+function isValidRoomCode(code: string): boolean {
+  return ROOM_CODE_REGEX.test(code);
+}
+
+function getRoomCodeError(code: string): string | null {
+  if (!code) return "Please enter a room code";
+  if (code.length !== 6) return "Room code must be exactly 6 characters";
+  if (!ROOM_CODE_REGEX.test(code)) return "Room code must contain only letters and numbers";
+  return null;
+}
+
 // Landing page provides a clean onboarding flow:
 // 1. User enters their name first (required for all actions)
 // 2. User chooses to either create a new room or join an existing one
@@ -63,18 +78,19 @@ export default function LandingPage() {
   };
 
   // Handle joining with entered room code
+  // Validates format BEFORE any socket connection attempt
   const handleJoinRoom = () => {
     const trimmedCode = roomCode.trim().toUpperCase();
-    if (!trimmedCode) {
-      setError("Please enter a room code");
-      return;
-    }
-    if (trimmedCode.length < 4) {
-      setError("Room code must be at least 4 characters");
+    const validationError = getRoomCodeError(trimmedCode);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     navigateToRoom(trimmedCode);
   };
+
+  // Check if current room code input is valid (for disabling button)
+  const isRoomCodeValid = isValidRoomCode(roomCode.trim().toUpperCase());
 
   return (
     <div 
@@ -165,6 +181,13 @@ export default function LandingPage() {
                 />
               </div>
 
+              {/* Show validation hint while typing */}
+              {roomCode && !isRoomCodeValid && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Room code must be exactly 6 letters/numbers
+                </p>
+              )}
+
               <div className="flex gap-2">
                 <Button
                   onClick={() => { setMode("initial"); setError(""); setRoomCode(""); }}
@@ -179,6 +202,7 @@ export default function LandingPage() {
                   onClick={handleJoinRoom}
                   size="lg"
                   className="flex-1 gap-2"
+                  disabled={!isRoomCodeValid}
                   data-testid="button-landing-join-submit"
                 >
                   <ArrowRight className="h-5 w-5" />
