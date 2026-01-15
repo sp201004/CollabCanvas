@@ -1,0 +1,87 @@
+You are improving the COLOR selection UI of an existing collaborative canvas app.
+
+VERY IMPORTANT RULES:
+- DO NOT rewrite the app
+- DO NOT refactor drawing logic or WebSocket logic
+- DO NOT add external libraries
+- Make ONLY scoped UI/CSS + minimal JS changes
+- Changes must be interview-explainable
+
+PROBLEMS TO FIX:
+1. Color swatches look cluttered and poorly aligned
+2. When black color is selected, other colors become hard to see
+3. Active color state is not clearly visible
+4. Custom color picker looks basic and not interactive
+5. Overall color UX does not feel professional (Canva-like)
+
+EXPECTED CORRECT BEHAVIOR:
+
+==============================
+1. PRESET COLOR SWATCHES
+==============================
+- All color swatches must be:
+  - Same size
+  - Evenly spaced
+  - Clearly visible on light backgrounds
+- Selected color must be clearly highlighted using:
+  - White outer ring OR
+  - Dual border (inner color + outer contrast)
+- Selection highlight must work for dark colors (black) as well
+
+DO NOT:
+- Hide other colors when black is selected
+- Rely only on shadow for active state
+
+==============================
+2. ACTIVE COLOR VISIBILITY
+==============================
+- Ensure active color always has:
+  - High-contrast outline
+  - Clear focus state
+- Black color must still show a visible selection ring
+- Use outline + background contrast, not color alone
+
+==============================
+3. CUSTOM COLOR PICKER (IMPORTANT)
+==============================
+- Replace basic input feel with a more interactive experience:
+  - Large color preview circle
+  - Hue/saturation selector style (HTML color input enhanced)
+- On open:
+  - Show a preview of selected color
+  - Update color live while dragging
+- Ensure picker feels deliberate and “design-tool-like”
+
+ALLOWED:
+- Native <input type="color"> styled cleanly
+- Custom preview element synced with input
+- Smooth transitions (CSS only)
+
+NOT ALLOWED:
+- External color picker libraries
+- Heavy JS logic
+
+==============================
+4. LAYOUT & POLISH
+==============================
+- Keep COLOR section fully contained
+- Add subtle divider between preset colors and custom picker
+- Consistent padding and spacing
+- Match visual language of the rest of the toolbar
+
+==============================
+CHANGE RULES:
+- Prefer CSS fixes (flex/grid, borders, outlines)
+- Minimal JS only for syncing preview ↔ input
+- No change to how color is applied to canvas
+- Add short comments explaining WHY visibility improvements were needed
+
+==============================
+AFTER COMPLETION:
+==============================
+- Briefly confirm:
+  - Active color visibility is fixed
+  - Black color selection no longer hides other colors
+  - Custom color picker feels interactive and professional
+
+Act like a senior frontend engineer polishing a design-tool color system (Canva/Figma-inspired UX).
