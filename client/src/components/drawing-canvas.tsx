@@ -43,9 +43,11 @@ export function DrawingCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
+    // Convert screen coordinates to canvas-local coordinates.
+    // We use getBoundingClientRect() to get the canvas position on screen,
+    // then subtract to get coordinates relative to the canvas top-left.
+    // No DPR scaling here since ctx.scale(dpr) already handles rendering.
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
 
     let clientX: number, clientY: number;
     if ("touches" in e) {
@@ -58,8 +60,8 @@ export function DrawingCanvas({
     }
 
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: clientX - rect.left,
+      y: clientY - rect.top,
     };
   }, []);
 
@@ -239,7 +241,9 @@ export function DrawingCanvas({
         ref={canvasRef}
         className="absolute inset-0 touch-none"
         style={{ 
-          cursor: currentTool === "eraser" ? "crosshair" : "crosshair",
+          cursor: currentTool === "eraser" 
+            ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3C/svg%3E") 12 12, crosshair`
+            : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M12 19l7-7 3 3-7 7-3-3z'/%3E%3Cpath d='M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z'/%3E%3Cpath d='M2 2l7.586 7.586'/%3E%3C/svg%3E") 2 22, crosshair`,
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
