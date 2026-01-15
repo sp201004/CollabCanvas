@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { DRAWING_COLORS } from "@shared/schema";
 
@@ -18,9 +17,6 @@ function isColorDark(hex: string): boolean {
 }
 
 export function ColorPicker({ currentColor, onColorChange }: ColorPickerProps) {
-  // Track if custom picker is open for enhanced preview
-  const [isPickerActive, setIsPickerActive] = useState(false);
-
   return (
     <div className="flex flex-col gap-2.5 p-2.5 bg-card border border-card-border rounded-lg" data-testid="color-picker">
       {/* Section header - Canva-style subtle label */}
@@ -67,40 +63,23 @@ export function ColorPicker({ currentColor, onColorChange }: ColorPickerProps) {
       {/* Subtle divider between presets and custom picker */}
       <div className="w-full h-px bg-border/50 my-0.5" />
       
-      {/* Custom color picker - design-tool style with large preview */}
-      <div className="flex flex-col items-center gap-2">
-        {/* Large color preview circle - shows current/custom color */}
-        <div
-          className={cn(
-            "w-10 h-10 rounded-full transition-all duration-200 cursor-pointer",
-            "border-2 border-border/50",
-            isPickerActive && "ring-2 ring-primary ring-offset-1"
-          )}
-          style={{ backgroundColor: currentColor }}
-          onClick={() => document.getElementById('custom-color-input')?.click()}
-          aria-label="Current color preview"
-          data-testid="color-preview"
+      {/* CLEANUP: Single custom color picker - removed duplicate preview circles
+          Only ONE element shows the custom color to avoid visual clutter */}
+      <label className="flex items-center justify-center gap-2 cursor-pointer group py-0.5">
+        {/* Native color input styled as the preview - no separate preview circle needed */}
+        <input
+          type="color"
+          value={currentColor}
+          onInput={(e) => onColorChange((e.target as HTMLInputElement).value)}
+          onChange={(e) => onColorChange(e.target.value)}
+          className="w-7 h-7 rounded-md cursor-pointer border border-border hover:ring-2 hover:ring-primary/50 transition-all"
+          style={{ padding: 0 }}
+          data-testid="input-custom-color"
         />
-        
-        {/* Hidden native color input + visible label */}
-        <label className="flex items-center gap-1.5 cursor-pointer group">
-          <input
-            id="custom-color-input"
-            type="color"
-            value={currentColor}
-            onFocus={() => setIsPickerActive(true)}
-            onBlur={() => setIsPickerActive(false)}
-            onInput={(e) => onColorChange((e.target as HTMLInputElement).value)}
-            onChange={(e) => onColorChange(e.target.value)}
-            // FIX: Smaller native picker, preview circle is the main visual
-            className="w-5 h-5 rounded cursor-pointer border border-border opacity-80 hover:opacity-100 transition-opacity"
-            data-testid="input-custom-color"
-          />
-          <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-            Custom
-          </span>
-        </label>
-      </div>
+        <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
+          Custom
+        </span>
+      </label>
     </div>
   );
 }

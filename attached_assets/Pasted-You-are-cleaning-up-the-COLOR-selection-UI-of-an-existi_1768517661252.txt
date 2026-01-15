@@ -1,0 +1,72 @@
+You are cleaning up the COLOR selection UI of an existing collaborative canvas app.
+
+STRICT RULES:
+- DO NOT rewrite the app
+- DO NOT refactor drawing or WebSocket logic
+- DO NOT add new libraries
+- Make ONLY minimal UI / CSS + very small JS changes
+- Everything must be interview-safe
+
+PROBLEM:
+- Multiple extra color circles are appearing outside the intended color swatches
+- Color UI looks cluttered and confusing
+- There are duplicate / unnecessary color previews
+- The COLOR section does not look clean or professional
+
+GOAL:
+- Keep the COLOR UI minimal, clean, and design-tool-like
+- Remove all unnecessary color circles
+- Use ONE clear custom color picker instead
+
+WHAT TO DO:
+
+==============================
+1. PRESET COLORS
+==============================
+- Keep ONLY the intended preset color swatches
+- Remove / hide any extra or duplicate color circles
+- Ensure swatches are:
+  - Uniform size
+  - Evenly spaced
+  - Fully inside the COLOR container
+
+==============================
+2. CUSTOM COLOR PICKER (IMPORTANT)
+==============================
+- Keep ONLY ONE custom color picker
+- Use a single large color preview circle OR square
+- Clicking it should open the color picker
+- Selected custom color should replace the preview
+
+REMOVE:
+- Any additional floating color previews
+- Any duplicate selected-color circles
+
+==============================
+3. ACTIVE COLOR STATE
+==============================
+- Clearly indicate the active color with:
+  - High-contrast border / ring
+- Ensure black or dark colors still show active state clearly
+
+==============================
+4. LAYOUT & CONTAINMENT
+==============================
+- Ensure all color UI stays inside the COLOR card
+- No overflow outside borders
+- Clean spacing between preset colors and custom picker
+- Add subtle divider if needed
+
+CHANGE RULES:
+- Prefer CSS fixes (display, visibility, layout)
+- Minimal JS only to sync selected color ↔ preview
+- No change to how color is applied to the canvas
+- Add short comments explaining WHY extra colors were removed
+
+AFTER FIX:
+- Briefly confirm that:
+  - Extra color circles are removed
+  - Only preset colors + one custom color picker remain
+  - COLOR section now looks clean and professional
+
+Act like a senior frontend engineer simplifying and polishing a design-tool color system.
