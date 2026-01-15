@@ -18,15 +18,29 @@ export function StrokeWidthSelector({
   onWidthChange,
   currentColor,
 }: StrokeWidthSelectorProps) {
-  // Handle number input changes - clamp and apply
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    if (!isNaN(value)) {
-      onWidthChange(clampSize(value));
+  // Handle number input - fires on every keystroke for real-time sync
+  // FIX: Using onInput instead of only onChange to update immediately as user types
+  const handleNumberInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const rawValue = (e.target as HTMLInputElement).value;
+    // Allow empty field while typing, but don't update state with invalid values
+    if (rawValue === "") return;
+    const value = parseInt(rawValue, 10);
+    if (!isNaN(value) && value >= MIN_SIZE && value <= MAX_SIZE) {
+      onWidthChange(value);
     }
   };
 
-  // Handle slider changes - real-time updates
+  // Handle blur - clamp to valid range when user leaves the field
+  const handleNumberBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (isNaN(value) || value < MIN_SIZE) {
+      onWidthChange(MIN_SIZE);
+    } else if (value > MAX_SIZE) {
+      onWidthChange(MAX_SIZE);
+    }
+  };
+
+  // Handle slider changes - real-time updates while dragging
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement> | React.FormEvent<HTMLInputElement>) => {
     onWidthChange(clampSize(Number((e.target as HTMLInputElement).value)));
   };
@@ -62,13 +76,15 @@ export function StrokeWidthSelector({
       />
       
       {/* Number input - click to type exact size value, syncs with slider */}
+      {/* FIX: Added onInput for real-time updates + onBlur for clamping */}
       <div className="flex items-center justify-center gap-1">
         <input
           type="number"
           min={MIN_SIZE}
           max={MAX_SIZE}
           value={currentWidth}
-          onChange={handleNumberChange}
+          onInput={handleNumberInput}
+          onBlur={handleNumberBlur}
           className="size-number-input w-12 text-center text-xs font-semibold bg-muted/50 border border-border rounded py-1 px-1 focus:outline-none focus:ring-1 focus:ring-primary"
           aria-label="Stroke width in pixels"
           data-testid="input-stroke-width-number"
