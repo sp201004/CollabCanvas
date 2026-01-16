@@ -122,6 +122,19 @@ export async function registerRoutes(
       io.to(currentRoomId).emit("history:state", historyState);
     });
 
+    // Shape erase event - eraser tool can erase shapes/text
+    socket.on("shape:erase", (data: { shapeId: string; roomId: string }) => {
+      if (!currentRoomId || data.roomId !== currentRoomId || !currentUserId) return;
+      
+      const erasedShape = roomManager.eraseShape(currentRoomId, data.shapeId, currentUserId);
+      if (erasedShape) {
+        io.to(currentRoomId).emit("shape:erase", { shapeId: data.shapeId, roomId: currentRoomId });
+        
+        const historyState = roomManager.getHistoryState(currentRoomId);
+        io.to(currentRoomId).emit("history:state", historyState);
+      }
+    });
+
     socket.on("canvas:clear", (roomId: string) => {
       if (!currentRoomId || roomId !== currentRoomId) return;
       

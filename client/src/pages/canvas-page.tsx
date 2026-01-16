@@ -43,12 +43,14 @@ const emptySocketReturn = {
   addStrokePoint: () => {},
   endStroke: () => {},
   addShape: () => {},
+  eraseShape: () => {},
   clearCanvas: () => {},
   undo: () => {},
   redo: () => {},
   addLocalStroke: () => {},
   updateLocalStroke: () => {},
   addLocalShape: () => {},
+  removeLocalShape: () => {},
 };
 
 export default function CanvasPage() {
@@ -89,12 +91,14 @@ export default function CanvasPage() {
     addStrokePoint,
     endStroke,
     addShape,
+    eraseShape,
     clearCanvas,
     undo,
     redo,
     addLocalStroke,
     updateLocalStroke,
     addLocalShape,
+    removeLocalShape,
   } = username ? socketData : emptySocketReturn;
 
   // Redirect if invalid room
@@ -283,10 +287,12 @@ export default function CanvasPage() {
               onStrokePoint={handleStrokePoint}
               onStrokeEnd={handleStrokeEnd}
               onShapeAdd={handleShapeAdd}
+              onShapeErase={eraseShape}
               onCursorMove={handleCursorMove}
               onLocalStrokeStart={addLocalStroke}
               onLocalStrokePoint={updateLocalStroke}
               onLocalShapeAdd={addLocalShape}
+              onLocalShapeErase={removeLocalShape}
               zoom={zoom}
               pan={pan}
               onZoomChange={setZoom}

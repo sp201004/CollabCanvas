@@ -61,6 +61,32 @@ class RoomManager {
     room.shapes.delete(shapeId);
   }
 
+  // Erase a shape with proper operation history (supports undo/redo)
+  eraseShape(roomId: string, shapeId: string, userId: string): Shape | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    
+    const shape = room.shapes.get(shapeId);
+    if (!shape) return null;
+    
+    // Remove shape from current state
+    room.shapes.delete(shapeId);
+    
+    // Add erase operation to history with the shape data for undo
+    room.operationHistory.push({
+      type: "erase",
+      strokeId: shapeId,
+      shape: { ...shape },
+      userId,
+      timestamp: Date.now(),
+    });
+    
+    // Clear undone operations (new action invalidates redo stack)
+    room.undoneOperations = [];
+    
+    return shape;
+  }
+
   getRoom(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
   }
@@ -203,8 +229,15 @@ class RoomManager {
         // Fallback: try to delete from shapes by strokeId
         room.shapes.delete(lastOperation.strokeId);
       }
-    } else if (lastOperation.type === "erase" && lastOperation.stroke) {
-      room.strokes.set(lastOperation.stroke.id, lastOperation.stroke);
+    } else if (lastOperation.type === "erase") {
+      // Restore erased stroke
+      if (lastOperation.stroke) {
+        room.strokes.set(lastOperation.stroke.id, lastOperation.stroke);
+      }
+      // Restore erased shape
+      if (lastOperation.shape) {
+        room.shapes.set(lastOperation.shape.id, lastOperation.shape);
+      }
     }
     
     return lastOperation;
@@ -226,8 +259,15 @@ class RoomManager {
       if (operation.shape) {
         room.shapes.set(operation.shape.id, operation.shape);
       }
-    } else if (operation.type === "erase" && operation.strokeId) {
-      room.strokes.delete(operation.strokeId);
+    } else if (operation.type === "erase") {
+      // Re-erase stroke
+      if (operation.strokeId && room.strokes.has(operation.strokeId)) {
+        room.strokes.delete(operation.strokeId);
+      }
+      // Re-erase shape
+      if (operation.shape) {
+        room.shapes.delete(operation.shape.id);
+      }
     }
     
     return operation;

@@ -1,0 +1,98 @@
+You are acting as a senior frontend + canvas systems engineer.
+
+PROJECT:
+CollabCanvas – Real-Time Collaborative Drawing Canvas
+
+PROBLEM (CRITICAL BUG):
+The eraser tool works ONLY on freehand brush strokes.
+It does NOT work on:
+- Shapes (rectangle, circle, line)
+- Text drawn on canvas
+
+This is incorrect behavior.
+
+EXPECTED CORRECT BEHAVIOR:
+Eraser must work uniformly on:
+✔ Brush strokes
+✔ Shapes
+✔ Text
+
+━━━━━━━━━━━━━━━━━━━━━━
+ROOT CAUSE TO INVESTIGATE
+━━━━━━━━━━━━━━━━━━━━━━
+Likely causes include (you must verify):
+- Shapes/text are treated as atomic operations, not erasable regions
+- Eraser only uses canvas composite mode for paths
+- Shapes/text are stored in operation history but not spatially erasable
+- Eraser ignores non-path operations
+
+━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY FIX STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. FIRST — CREATE TODO LIST
+Identify:
+- How strokes, shapes, and text are represented internally
+- How eraser currently works
+- Why shapes/text are skipped
+
+2. THEN — FIX (AUTOMATICALLY, NO PAUSE)
+
+You MUST implement ONE of these correct approaches:
+
+OPTION A (Preferred – Interview Safe):
+- Treat eraser as a destructive operation:
+  - Eraser creates an "erase operation" with a radius
+  - During redraw, any shape/text intersecting erase region is removed
+  - Update global operation history accordingly
+  - Undo/Redo must handle erased shapes/text
+
+OPTION B (Acceptable):
+- Convert shapes/text into drawable paths at render-time
+- Allow eraser to affect them via hit-testing
+- Remove affected operations from history
+
+DO NOT:
+- Ignore shapes/text
+- Fake erase by drawing background color
+- Break undo/redo
+- Add new libraries
+
+━━━━━━━━━━━━━━━━━━━━━━
+UNDO / REDO REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━
+- Erasing a shape/text must be undoable
+- Undo must restore the erased shape/text
+- Redo must erase it again
+- Global undo rules must remain intact
+
+━━━━━━━━━━━━━━━━━━━━━━
+REAL-TIME SYNC
+━━━━━━━━━━━━━━━━━━━━━━
+- Erase events must sync to all users
+- Other users must see shapes/text erased in real time
+- Conflict resolution must stay consistent
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL VERIFICATION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━
+
+✔ Eraser removes brush strokes  
+✔ Eraser removes shapes  
+✔ Eraser removes text  
+✔ Undo restores erased shapes/text  
+✔ Redo re-erases them  
+✔ No visual hacks (background-color painting)  
+✔ Works on desktop + mobile  
+✔ Interview-explainable solution  
+
+━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT REQUIRED
+━━━━━━━━━━━━━━━━━━━━━━
+- Brief explanation of root cause
+- Chosen fix strategy (A or B)
+- Exact code changes
+- Confirmation checklist (all ✔)
+
+Act like a senior engineer fixing a real production bug.
+Proceed immediately. Do not ask questions.
