@@ -121,25 +121,37 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
               {/* Input-level + submit-level validation both needed:
                   maxLength stops typing beyond 6, onChange filters invalid chars,
                   submit validation is final safety check before socket.join */}
-              <Input
-                type="text"
-                placeholder="Room ID"
-                value={joinRoomId}
-                onChange={(e) => {
-                  // Strip invalid chars and limit to 6 - only allow A-Z, 0-9
-                  const filtered = e.target.value
-                    .toUpperCase()
-                    .replace(/[^A-Z0-9]/g, "")
-                    .slice(0, 6);
-                  setJoinRoomId(filtered);
-                }}
-                onKeyDown={(e) => e.key === "Enter" && isJoinCodeValid && handleJoinRoom()}
-                maxLength={6}
-                pattern="[A-Z0-9]{6}"
-                className="h-7 w-20 sm:w-24 text-xs font-mono uppercase"
-                autoFocus
-                data-testid="input-join-room"
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="ABC123"
+                  value={joinRoomId}
+                  onChange={(e) => {
+                    // Strip invalid chars and limit to 6 - only allow A-Z, 0-9
+                    const filtered = e.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, "")
+                      .slice(0, 6);
+                    setJoinRoomId(filtered);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && isJoinCodeValid && handleJoinRoom()}
+                  maxLength={6}
+                  pattern="[A-Z0-9]{6}"
+                  className={`h-7 w-20 sm:w-24 text-xs font-mono uppercase ${
+                    joinRoomId && !isJoinCodeValid ? "border-destructive focus-visible:ring-destructive" : ""
+                  }`}
+                  autoFocus
+                  data-testid="input-join-room"
+                />
+                {/* Visual feedback: show character count while typing */}
+                {joinRoomId && (
+                  <span className={`absolute -bottom-4 left-0 text-[9px] ${
+                    isJoinCodeValid ? "text-green-500" : "text-muted-foreground"
+                  }`}>
+                    {joinRoomId.length}/6
+                  </span>
+                )}
+              </div>
               <Button
                 size="sm"
                 variant="default"

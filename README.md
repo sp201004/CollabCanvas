@@ -97,6 +97,16 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed technical documentation in
 - Conflict resolution strategy
 - Performance optimizations
 
+## Time Spent
+
+Approximately **12-15 hours** of development time, including:
+- Core architecture and real-time sync: ~4 hours
+- Drawing tools and Canvas API implementation: ~3 hours
+- Room system and user presence: ~2 hours
+- UI/UX polish and responsive design: ~2 hours
+- Testing and bug fixes: ~2 hours
+- Documentation: ~1 hour
+
 ## Known Limitations
 
 1. **No persistence** - Canvas state is lost when all users leave (after 60s timeout)
@@ -104,6 +114,17 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed technical documentation in
 3. **Fixed canvas size** - No pan/zoom functionality
 4. **Global undo** - Users can undo each other's work (intentional for collaboration)
 5. **No shapes/text** - Only freehand brush and eraser tools
+
+## Optional / Bonus Features
+
+The following features are implemented as **optional enhancements** beyond core requirements:
+
+- **Performance Metrics** - Live FPS counter and network latency display in header
+- **Mobile Touch Support** - Full touch/pointer event handling for tablets and phones
+- **Keyboard Shortcuts** - B/E for tools, Ctrl+Z/Y for undo/redo
+- **Custom Color Picker** - Beyond preset colors, users can pick any custom color
+- **Cursor Indicators** - See other users' cursor positions with name labels
+- **Visual Drawing State** - Pulsing indicator when another user is actively drawing
 
 ## Browser Support
 
