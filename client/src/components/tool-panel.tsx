@@ -1,6 +1,17 @@
 import { Brush, Eraser, Undo2, Redo2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { DrawingTool } from "@shared/schema";
 
 interface ToolPanelProps {
@@ -109,24 +120,45 @@ export function ToolPanel({
       {/* Subtle divider */}
       <div className="w-full h-px bg-border/50" />
 
-      {/* Clear action */}
+      {/* Clear action with confirmation dialog */}
       <div className="flex justify-center">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onClear}
-              className="h-9 w-9 text-destructive hover:text-destructive"
-              data-testid="button-clear-canvas"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p>Clear Canvas</p>
-          </TooltipContent>
-        </Tooltip>
+        <AlertDialog>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 text-destructive hover:text-destructive"
+                  data-testid="button-clear-canvas"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Clear Canvas</p>
+            </TooltipContent>
+          </Tooltip>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Clear entire canvas?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete all drawings for everyone in the room. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-clear-cancel">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onClear}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                data-testid="button-clear-confirm"
+              >
+                Clear Canvas
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

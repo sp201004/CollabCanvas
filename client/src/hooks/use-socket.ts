@@ -15,6 +15,8 @@ interface UseSocketReturn {
   strokes: Stroke[];
   cursors: Map<string, CursorUpdate>;
   socket: ReturnType<typeof getSocket> | null;
+  canUndo: boolean;
+  canRedo: boolean;
   sendCursorMove: (position: Point | null, isDrawing: boolean) => void;
   startStroke: (stroke: Stroke) => void;
   addStrokePoint: (strokeId: string, point: Point) => void;
@@ -32,6 +34,9 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
   const [users, setUsers] = useState<User[]>([]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [cursors, setCursors] = useState<Map<string, CursorUpdate>>(new Map());
+  // Track undo/redo availability based on operation history
+  const [operationCount, setOperationCount] = useState(0);
+  const [undoneCount, setUndoneCount] = useState(0);
   const strokesRef = useRef<Map<string, Stroke>>(new Map());
 
   useEffect(() => {
@@ -90,6 +95,9 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     function onCanvasState(canvasStrokes: Stroke[]) {
       setStrokes(canvasStrokes);
       strokesRef.current = new Map(canvasStrokes.map((s) => [s.id, s]));
+      // Reset undo/redo state based on received canvas state
+      setOperationCount(canvasStrokes.length);
+      setUndoneCount(0);
     }
 
     function onStrokeStart(data: { stroke: Stroke; roomId: string }) {
@@ -113,12 +121,18 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     function onStrokeEnd(data: { strokeId: string; roomId: string }) {
       if (data.roomId === roomId) {
         setStrokes(Array.from(strokesRef.current.values()));
+        // New operation completed - increment count, clear redo stack
+        setOperationCount((prev) => prev + 1);
+        setUndoneCount(0);
       }
     }
 
     function onCanvasClear() {
       strokesRef.current.clear();
       setStrokes([]);
+      // Clear resets all history
+      setOperationCount(0);
+      setUndoneCount(0);
     }
 
     function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
@@ -129,6 +143,9 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
         strokesRef.current.set(operation.stroke.id, operation.stroke);
         setStrokes(Array.from(strokesRef.current.values()));
       }
+      // Track: operation moved from history to undone stack
+      setOperationCount((prev) => Math.max(0, prev - 1));
+      setUndoneCount((prev) => prev + 1);
     }
 
     function onOperationRedo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
@@ -139,6 +156,9 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
         strokesRef.current.delete(operation.strokeId);
         setStrokes(Array.from(strokesRef.current.values()));
       }
+      // Track: operation moved from undone stack back to history
+      setOperationCount((prev) => prev + 1);
+      setUndoneCount((prev) => Math.max(0, prev - 1));
     }
 
     socket.on("connect", onConnect);
@@ -247,6 +267,8 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     strokes,
     cursors,
     socket: enabled && username ? getSocket() : null,
+    canUndo: operationCount > 0,
+    canRedo: undoneCount > 0,
     sendCursorMove,
     startStroke,
     addStrokePoint,

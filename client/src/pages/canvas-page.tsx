@@ -37,6 +37,8 @@ const emptySocketReturn = {
   strokes: [] as Stroke[],
   cursors: new Map<string, CursorUpdate>(),
   socket: null,
+  canUndo: false,
+  canRedo: false,
   sendCursorMove: () => {},
   startStroke: () => {},
   addStrokePoint: () => {},
@@ -78,6 +80,8 @@ export default function CanvasPage() {
     strokes,
     cursors,
     socket,
+    canUndo,
+    canRedo,
     sendCursorMove,
     startStroke,
     addStrokePoint,
@@ -184,8 +188,8 @@ export default function CanvasPage() {
             onUndo={undo}
             onRedo={redo}
             onClear={clearCanvas}
-            canUndo={strokes.length > 0}
-            canRedo={true}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
           <ColorPicker
             currentColor={currentColor}
