@@ -1,0 +1,130 @@
+You are reviewing my project “CollabCanvas – Real-Time Collaborative Drawing Canvas”
+to verify whether it fully follows the given assignment requirements.
+
+THIS IS A REVIEW / AUDIT TASK — NOT A BUILD TASK.
+
+STRICT RULES:
+- DO NOT rewrite the app
+- DO NOT refactor code
+- DO NOT add new features
+- DO NOT add libraries
+- DO NOT change architecture
+- ONLY inspect, verify, and report
+
+==================================================
+ASSIGNMENT COMPLIANCE CHECK
+==================================================
+
+CHECK THE FOLLOWING AREAS ONE BY ONE:
+
+--------------------------------------------------
+1. CORE FUNCTIONALITY
+--------------------------------------------------
+Verify:
+- Multiple users can draw simultaneously
+- Real-time drawing sync (strokes visible while drawing, not after)
+- Cursor / user indicators work correctly
+- Drawing tools exist (pen, eraser, color, size)
+- Undo / Redo works globally or is clearly documented if limited
+- Overlapping drawings do not break canvas state
+
+Report:
+- ✔ Fully implemented
+- ⚠ Partially implemented
+- ❌ Missing
+
+--------------------------------------------------
+2. CANVAS & PERFORMANCE
+--------------------------------------------------
+Verify:
+- Raw Canvas API usage (no drawing libraries)
+- Smooth drawing (path optimization / throttling)
+- High-frequency mouse/touch events handled safely
+- Canvas redraw strategy is reasonable
+
+--------------------------------------------------
+3. REAL-TIME ARCHITECTURE
+--------------------------------------------------
+Verify:
+- WebSocket (or Socket.io) is used correctly
+- Drawing events are serialized and broadcast
+- Events are scoped per room
+- Network latency does not break sync
+
+--------------------------------------------------
+4. ROOM SYSTEM
+--------------------------------------------------
+Verify:
+- Multiple isolated rooms exist
+- Users in one room cannot see another room
+- Room IDs are random and validated
+- Join/Create flow requires username
+- URL does NOT auto-join without user intent
+
+--------------------------------------------------
+5. STATE MANAGEMENT
+--------------------------------------------------
+Verify:
+- Drawing state consistency across users
+- Undo/Redo strategy is documented or explained
+- Conflict handling is reasonable and documented
+
+--------------------------------------------------
+6. BONUS FEATURES (CHECK ONLY IF PRESENT)
+--------------------------------------------------
+Check if implemented:
+- Mobile touch support
+- Drawing persistence
+- Performance metrics (FPS, latency)
+- Creative tools (shapes, text, images)
+
+If missing, confirm they are OPTIONAL and do not break core requirements.
+
+--------------------------------------------------
+7. PROJECT STRUCTURE
+--------------------------------------------------
+Verify:
+- Folder structure matches assignment guidelines
+- Files are logically separated
+- Code is readable and organized
+
+--------------------------------------------------
+8. DOCUMENTATION
+--------------------------------------------------
+Verify README.md includes:
+- Setup instructions
+- Multi-user testing steps
+- Known limitations
+- Time spent
+
+Verify ARCHITECTURE.md includes:
+- Data flow explanation
+- WebSocket message structure
+- Undo/Redo strategy
+- Performance decisions
+- Conflict resolution explanation
+
+--------------------------------------------------
+9. CODE QUALITY
+--------------------------------------------------
+Verify:
+- No obvious copy-paste tutorial code
+- Comments are meaningful
+- Error handling exists
+- Code is explainable line-by-line
+
+==================================================
+FINAL OUTPUT FORMAT
+==================================================
+
+1. Overall Compliance Score (out of 100)
+2. Clear table:
+   - Requirement
+   - Status (✔ / ⚠ / ❌)
+   - Notes
+3. Top 3 strengths of the project
+4. Top 3 risks or weak areas (if any)
+5. Interview-readiness verdict:
+   - READY / NEEDS MINOR FIXES / NOT READY
+
+Act like a senior reviewer evaluating a real interview assignment.
