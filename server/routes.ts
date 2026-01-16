@@ -46,6 +46,10 @@ export async function registerRoutes(
       const strokes = roomManager.getStrokes(roomId);
       socket.emit("canvas:state", strokes);
       
+      // Send history state so client knows if undo/redo is available
+      const historyState = roomManager.getHistoryState(roomId);
+      socket.emit("history:state", historyState);
+      
       socket.to(roomId).emit("user:joined", user);
     });
 
@@ -93,6 +97,10 @@ export async function registerRoutes(
       roomManager.finalizeStroke(currentRoomId, data.strokeId);
       
       socket.to(currentRoomId).emit("stroke:end", { strokeId: data.strokeId, roomId: currentRoomId });
+      
+      // Broadcast history state to ALL clients (including sender) so undo/redo buttons update
+      const historyState = roomManager.getHistoryState(currentRoomId);
+      io.to(currentRoomId).emit("history:state", historyState);
     });
 
     socket.on("canvas:clear", (roomId: string) => {
@@ -101,6 +109,9 @@ export async function registerRoutes(
       roomManager.clearCanvas(currentRoomId);
       
       io.to(currentRoomId).emit("canvas:clear");
+      // Broadcast updated history state (now empty)
+      const historyState = roomManager.getHistoryState(currentRoomId);
+      io.to(currentRoomId).emit("history:state", historyState);
     });
 
     socket.on("operation:undo", (roomId: string) => {
@@ -109,6 +120,9 @@ export async function registerRoutes(
       const operation = roomManager.undo(currentRoomId);
       if (operation) {
         io.to(currentRoomId).emit("operation:undo", operation);
+        // Broadcast updated history state
+        const historyState = roomManager.getHistoryState(currentRoomId);
+        io.to(currentRoomId).emit("history:state", historyState);
       }
     });
 
@@ -118,6 +132,9 @@ export async function registerRoutes(
       const operation = roomManager.redo(currentRoomId);
       if (operation) {
         io.to(currentRoomId).emit("operation:redo", operation);
+        // Broadcast updated history state
+        const historyState = roomManager.getHistoryState(currentRoomId);
+        io.to(currentRoomId).emit("history:state", historyState);
       }
     });
 

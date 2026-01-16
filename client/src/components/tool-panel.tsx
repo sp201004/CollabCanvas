@@ -151,7 +151,7 @@ export function ToolPanel({
               <AlertDialogCancel data-testid="button-clear-cancel">Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={onClear}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="bg-destructive text-destructive-foreground"
                 data-testid="button-clear-confirm"
               >
                 Clear Canvas

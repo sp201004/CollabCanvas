@@ -178,6 +178,18 @@ class RoomManager {
     
     return operation;
   }
+
+  // Get current history state for syncing canUndo/canRedo to clients
+  getHistoryState(roomId: string): { operationCount: number; undoneCount: number } {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      return { operationCount: 0, undoneCount: 0 };
+    }
+    return {
+      operationCount: room.operationHistory.length,
+      undoneCount: room.undoneOperations.length,
+    };
+  }
 }
 
 export const roomManager = new RoomManager();

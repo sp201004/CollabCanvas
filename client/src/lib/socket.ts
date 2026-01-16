@@ -14,6 +14,7 @@ type ServerToClientEvents = {
   "operation:undo": (operation: Operation) => void;
   "operation:redo": (operation: Operation) => void;
   "room:joined": (roomId: string, userId: string, username: string, color: string) => void;
+  "history:state": (data: { operationCount: number; undoneCount: number }) => void;
   "error": (message: string) => void;
 };
 
