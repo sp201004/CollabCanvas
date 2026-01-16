@@ -61,6 +61,24 @@ class RoomManager {
     room.shapes.delete(shapeId);
   }
 
+  updateShape(roomId: string, oldShape: Shape, newShape: Shape): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+    
+    room.shapes.set(newShape.id, newShape);
+    
+    room.operationHistory.push({
+      type: "move",
+      strokeId: newShape.id,
+      shape: { ...newShape },
+      oldShape: { ...oldShape },
+      userId: newShape.userId,
+      timestamp: Date.now(),
+    });
+    
+    room.undoneOperations = [];
+  }
+
   getRoom(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
   }
@@ -212,6 +230,11 @@ class RoomManager {
       if (lastOperation.shape) {
         room.shapes.set(lastOperation.shape.id, lastOperation.shape);
       }
+    } else if (lastOperation.type === "move") {
+      // Restore shape to old position
+      if (lastOperation.oldShape) {
+        room.shapes.set(lastOperation.oldShape.id, lastOperation.oldShape);
+      }
     }
     
     return lastOperation;
@@ -241,6 +264,11 @@ class RoomManager {
       // Re-erase shape
       if (operation.shape) {
         room.shapes.delete(operation.shape.id);
+      }
+    } else if (operation.type === "move") {
+      // Re-apply the move (restore to new position)
+      if (operation.shape) {
+        room.shapes.set(operation.shape.id, operation.shape);
       }
     }
     

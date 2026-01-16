@@ -23,12 +23,14 @@ interface UseSocketReturn {
   addStrokePoint: (strokeId: string, point: Point) => void;
   endStroke: (strokeId: string) => void;
   addShape: (shape: Shape) => void;
+  updateShape: (oldShape: Shape, newShape: Shape) => void;
   clearCanvas: () => void;
   undo: () => void;
   redo: () => void;
   addLocalStroke: (stroke: Stroke) => void;
   updateLocalStroke: (strokeId: string, point: Point) => void;
   addLocalShape: (shape: Shape) => void;
+  updateLocalShape: (shape: Shape) => void;
 }
 
 // Cursor debounce interval in ms (reduces socket traffic)
@@ -157,6 +159,13 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       }
     }
 
+    function onShapeUpdate(data: { oldShape: Shape; newShape: Shape; roomId: string }) {
+      if (data.roomId === roomId) {
+        shapesRef.current.set(data.newShape.id, data.newShape);
+        setShapes(Array.from(shapesRef.current.values()));
+      }
+    }
+
     function onCanvasClear() {
       strokesRef.current.clear();
       shapesRef.current.clear();
@@ -166,7 +175,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       setUndoneCount(0);
     }
 
-    function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke; shape?: Shape }) {
+    function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke; shape?: Shape; oldShape?: Shape }) {
       if (operation.type === "draw") {
         // Delete stroke if strokeId provided
         if (operation.strokeId) {
@@ -194,6 +203,12 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
           shapesRef.current.set(operation.shape.id, operation.shape);
           setShapes(Array.from(shapesRef.current.values()));
         }
+      } else if (operation.type === "move") {
+        // Restore shape to old position
+        if (operation.oldShape) {
+          shapesRef.current.set(operation.oldShape.id, operation.oldShape);
+          setShapes(Array.from(shapesRef.current.values()));
+        }
       }
     }
 
@@ -218,6 +233,12 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
           shapesRef.current.delete(operation.shape.id);
           setShapes(Array.from(shapesRef.current.values()));
         }
+      } else if (operation.type === "move") {
+        // Re-apply the move
+        if (operation.shape) {
+          shapesRef.current.set(operation.shape.id, operation.shape);
+          setShapes(Array.from(shapesRef.current.values()));
+        }
       }
     }
 
@@ -235,6 +256,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     socket.on("stroke:point", onStrokePoint);
     socket.on("stroke:end", onStrokeEnd);
     socket.on("shape:add", onShapeAdd);
+    socket.on("shape:update", onShapeUpdate);
     socket.on("canvas:clear", onCanvasClear);
     socket.on("operation:undo", onOperationUndo);
     socket.on("operation:redo", onOperationRedo);
@@ -258,6 +280,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       socket.off("stroke:point", onStrokePoint);
       socket.off("stroke:end", onStrokeEnd);
       socket.off("shape:add", onShapeAdd);
+      socket.off("shape:update", onShapeUpdate);
       socket.off("canvas:clear", onCanvasClear);
       socket.off("operation:undo", onOperationUndo);
       socket.off("operation:redo", onOperationRedo);
@@ -343,6 +366,14 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     [roomId]
   );
 
+  const updateShape = useCallback(
+    (oldShape: Shape, newShape: Shape) => {
+      const socket = getSocket();
+      socket.emit("shape:update", { oldShape, newShape, roomId });
+    },
+    [roomId]
+  );
+
   const clearCanvas = useCallback(() => {
     const socket = getSocket();
     socket.emit("canvas:clear", roomId);
@@ -377,6 +408,11 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     setShapes(Array.from(shapesRef.current.values()));
   }, []);
 
+  const updateLocalShape = useCallback((shape: Shape) => {
+    shapesRef.current.set(shape.id, shape);
+    setShapes(Array.from(shapesRef.current.values()));
+  }, []);
+
   return {
     isConnected,
     currentUser,
@@ -392,11 +428,13 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     addStrokePoint,
     endStroke,
     addShape,
+    updateShape,
     clearCanvas,
     undo,
     redo,
     addLocalStroke,
     updateLocalStroke,
     addLocalShape,
+    updateLocalShape,
   };
 }

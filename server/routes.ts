@@ -122,6 +122,18 @@ export async function registerRoutes(
       io.to(currentRoomId).emit("history:state", historyState);
     });
 
+    // Shape update for move/transform operations
+    socket.on("shape:update", (data: { oldShape: Shape; newShape: Shape; roomId: string }) => {
+      if (!currentRoomId || data.roomId !== currentRoomId) return;
+      
+      roomManager.updateShape(currentRoomId, data.oldShape, data.newShape);
+      
+      io.to(currentRoomId).emit("shape:update", { oldShape: data.oldShape, newShape: data.newShape, roomId: currentRoomId });
+      
+      const historyState = roomManager.getHistoryState(currentRoomId);
+      io.to(currentRoomId).emit("history:state", historyState);
+    });
+
     socket.on("canvas:clear", (roomId: string) => {
       if (!currentRoomId || roomId !== currentRoomId) return;
       
