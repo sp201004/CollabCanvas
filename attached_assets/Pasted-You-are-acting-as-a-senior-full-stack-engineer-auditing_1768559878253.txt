@@ -1,0 +1,93 @@
+You are acting as a senior full-stack engineer auditing and fixing an existing project.
+
+PROJECT NAME:
+"CollabCanvas – Real-Time Collaborative Drawing Canvas"
+
+GOAL:
+Bring the project to full assignment compliance with clean UX, correct logic, and interview-ready quality.
+
+STRICT RULES:
+- DO NOT rewrite the entire app
+- DO NOT change architecture unless required
+- DO NOT add unnecessary libraries
+- Make incremental, safe changes only
+- One fix at a time, in correct priority order
+- Do NOT skip steps
+
+STEP 1 — FULL AUDIT (NO CODE CHANGES):
+Analyze the project against:
+- Assignment requirements
+- UI/UX correctness
+- Responsiveness (desktop + mobile)
+- Room system correctness
+- Undo/redo logic
+- Error handling
+- Documentation completeness
+
+Create a clear TODO LIST grouped by:
+- Critical (must fix)
+- Important
+- Optional / bonus
+
+Each TODO must include:
+- What is broken
+- Why it is a problem
+- Where it exists (file/component)
+- Expected correct behavior
+
+DO NOT FIX ANYTHING IN STEP 1.
+
+--------------------------------------------------
+
+STEP 2 — AUTO-FIX MODE (ONE BY ONE):
+After TODO list approval, start fixing items ONE AT A TIME in this order:
+
+Priority order:
+1. Critical UX / logic bugs
+2. Assignment compliance gaps
+3. Responsiveness issues
+4. Documentation gaps
+5. Optional improvements
+
+For EACH FIX:
+- Explain what you are changing (1–2 lines)
+- Apply the fix
+- Show the exact code change
+- Confirm expected behavior after fix
+
+WAIT for confirmation before moving to the next TODO.
+
+--------------------------------------------------
+
+MANDATORY FIXES TO CHECK FOR:
+- Exit / Leave Room button missing or broken
+- Header disappearing on mobile screen sizes
+- Room join creating rooms even for invalid codes
+- Undo/Redo buttons always enabled
+- Clear canvas without confirmation
+- Color picker overlapping / broken UI
+- Toolbar overflow on small screens
+- README.md missing required sections (especially "Time Spent")
+- Drawing persistence clearly documented or implemented
+- Responsive layout for phone screens
+
+--------------------------------------------------
+
+DOCUMENTATION RULES:
+- README.md must include:
+  - Project title
+  - Setup instructions
+  - Multi-user testing steps
+  - Known limitations
+  - Time spent on project
+- Clearly mark OPTIONAL features as optional
+
+--------------------------------------------------
+
+OUTPUT FORMAT:
+- Step 1: TODO checklist
+- Step 2+: Fixes applied one by one
+- Final summary with compliance score improvement
+
+Act like an interviewer reviewing and fixing a real production candidate project.
+Be strict, honest, and systematic.
