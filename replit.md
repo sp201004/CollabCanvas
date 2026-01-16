@@ -50,6 +50,8 @@ CollabCanvas is a multi-user drawing application where multiple people can draw 
 8. **Drawing Tools**: Brush, eraser, color picker, stroke width
 9. **Room System**: Shareable 6-character room codes
 10. **Undo/Redo**: Global operation history across all users
+11. **Move/Select Tool**: Click to select shapes/text, drag to reposition with undo/redo support
+12. **ToolSettingsBar**: Photoshop-style context-aware top bar showing tool-specific settings
 
 ## Eraser Implementation
 The eraser uses pixel-based erasing (like MS Paint/Photoshop):
@@ -63,6 +65,7 @@ The eraser uses pixel-based erasing (like MS Paint/Photoshop):
 - `room:join` / `room:leave` - User room management
 - `stroke:start` / `stroke:point` / `stroke:end` - Drawing events
 - `shape:add` - Shape creation events
+- `shape:update` - Shape position updates (for move operations)
 - `cursor:move` - Cursor position updates (debounced)
 - `operation:undo` / `operation:redo` - Global undo/redo
 - `canvas:clear` - Clear entire canvas
@@ -88,6 +91,7 @@ The app runs on port 5000.
 - `C` - Circle tool
 - `L` - Line tool
 - `T` - Text tool
+- `V` - Move/Select tool
 - `Ctrl+Z` - Undo
 - `Ctrl+Y` - Redo
 - `+` / `-` - Zoom in/out
