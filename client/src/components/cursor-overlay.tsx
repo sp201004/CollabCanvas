@@ -6,6 +6,8 @@ interface CursorOverlayProps {
   users: User[];
   currentUserId: string | null;
   canvasRect: DOMRect | null;
+  zoom?: number;
+  pan?: { x: number; y: number };
 }
 
 export function CursorOverlay({
@@ -13,10 +15,12 @@ export function CursorOverlay({
   users,
   currentUserId,
   canvasRect,
+  zoom = 1,
+  pan = { x: 0, y: 0 },
 }: CursorOverlayProps) {
   const visibleCursors = useMemo(() => {
     const result: Array<{
-      userId: string;
+      odifyUserId: string;
       username: string;
       color: string;
       x: number;
@@ -24,15 +28,15 @@ export function CursorOverlay({
       isDrawing: boolean;
     }> = [];
 
-    cursors.forEach((cursor, odifyuserId) => {
-      if (odifyuserId === currentUserId) return;
+    cursors.forEach((cursor, odifyUserId) => {
+      if (odifyUserId === currentUserId) return;
       if (!cursor.position) return;
 
-      const user = users.find((u) => u.id === odifyuserId);
+      const user = users.find((u) => u.id === odifyUserId);
       if (!user) return;
 
       result.push({
-        userId: odifyuserId,
+        odifyUserId,
         username: user.username,
         color: user.color,
         x: cursor.position.x,
@@ -52,16 +56,15 @@ export function CursorOverlay({
       data-testid="cursor-overlay"
     >
       {visibleCursors.map((cursor) => {
-        const dpr = window.devicePixelRatio || 1;
-        const x = cursor.x / dpr;
-        const y = cursor.y / dpr;
+        const screenX = cursor.x * zoom + pan.x;
+        const screenY = cursor.y * zoom + pan.y;
 
         return (
           <div
-            key={cursor.userId}
+            key={cursor.odifyUserId}
             className="absolute transition-transform duration-75 ease-out"
             style={{
-              transform: `translate(${x}px, ${y}px)`,
+              transform: `translate(${screenX}px, ${screenY}px)`,
             }}
           >
             <div

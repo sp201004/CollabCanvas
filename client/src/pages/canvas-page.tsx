@@ -297,6 +297,8 @@ export default function CanvasPage() {
               users={users}
               currentUserId={currentUser?.id || null}
               canvasRect={canvasRect}
+              zoom={zoom}
+              pan={pan}
             />
           </div>
         </main>

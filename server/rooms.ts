@@ -41,6 +41,7 @@ class RoomManager {
     room.operationHistory.push({
       type: "draw",
       strokeId: shape.id,
+      shape: { ...shape },
       userId: shape.userId,
       timestamp: Date.now(),
     });
@@ -190,8 +191,18 @@ class RoomManager {
     const lastOperation = room.operationHistory.pop()!;
     room.undoneOperations.push(lastOperation);
     
-    if (lastOperation.type === "draw" && lastOperation.strokeId) {
-      room.strokes.delete(lastOperation.strokeId);
+    if (lastOperation.type === "draw") {
+      // Delete stroke if present
+      if (lastOperation.strokeId && room.strokes.has(lastOperation.strokeId)) {
+        room.strokes.delete(lastOperation.strokeId);
+      }
+      // Delete shape if present (shapes are stored with their id as key)
+      if (lastOperation.shape) {
+        room.shapes.delete(lastOperation.shape.id);
+      } else if (lastOperation.strokeId) {
+        // Fallback: try to delete from shapes by strokeId
+        room.shapes.delete(lastOperation.strokeId);
+      }
     } else if (lastOperation.type === "erase" && lastOperation.stroke) {
       room.strokes.set(lastOperation.stroke.id, lastOperation.stroke);
     }
@@ -206,8 +217,15 @@ class RoomManager {
     const operation = room.undoneOperations.pop()!;
     room.operationHistory.push(operation);
     
-    if (operation.type === "draw" && operation.stroke) {
-      room.strokes.set(operation.stroke.id, operation.stroke);
+    if (operation.type === "draw") {
+      // Restore stroke if present
+      if (operation.stroke) {
+        room.strokes.set(operation.stroke.id, operation.stroke);
+      }
+      // Restore shape if present
+      if (operation.shape) {
+        room.shapes.set(operation.shape.id, operation.shape);
+      }
     } else if (operation.type === "erase" && operation.strokeId) {
       room.strokes.delete(operation.strokeId);
     }

@@ -29,22 +29,6 @@ export const userSchema = z.object({
 
 export type User = z.infer<typeof userSchema>;
 
-export const roomSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  users: z.array(userSchema),
-  strokes: z.array(strokeSchema),
-  operationHistory: z.array(z.object({
-    type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
-    strokeId: z.string().optional(),
-    stroke: strokeSchema.optional(),
-    userId: z.string(),
-    timestamp: z.number(),
-  })),
-});
-
-export type Room = z.infer<typeof roomSchema>;
-
 export const drawingToolSchema = z.enum(["brush", "eraser", "rectangle", "circle", "line", "text"]);
 export type DrawingTool = z.infer<typeof drawingToolSchema>;
 
@@ -58,10 +42,27 @@ export const shapeSchema = z.object({
   width: z.number(),
   userId: z.string(),
   timestamp: z.number(),
-  text: z.string().optional(), // For text tool
+  text: z.string().optional(),
 });
 
 export type Shape = z.infer<typeof shapeSchema>;
+
+export const roomSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  users: z.array(userSchema),
+  strokes: z.array(strokeSchema),
+  operationHistory: z.array(z.object({
+    type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
+    strokeId: z.string().optional(),
+    stroke: strokeSchema.optional(),
+    shape: shapeSchema.optional(),
+    userId: z.string(),
+    timestamp: z.number(),
+  })),
+});
+
+export type Room = z.infer<typeof roomSchema>;
 
 export const cursorUpdateSchema = z.object({
   userId: z.string(),
@@ -90,6 +91,7 @@ export const operationSchema = z.object({
   type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
   strokeId: z.string().optional(),
   stroke: strokeSchema.optional(),
+  shape: shapeSchema.optional(),
   userId: z.string(),
   timestamp: z.number(),
 });

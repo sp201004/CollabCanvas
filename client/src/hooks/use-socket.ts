@@ -158,22 +158,39 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       setUndoneCount(0);
     }
 
-    function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
-      if (operation.type === "draw" && operation.strokeId) {
-        strokesRef.current.delete(operation.strokeId);
-        shapesRef.current.delete(operation.strokeId);
-        setStrokes(Array.from(strokesRef.current.values()));
-        setShapes(Array.from(shapesRef.current.values()));
+    function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke; shape?: Shape }) {
+      if (operation.type === "draw") {
+        // Delete stroke if strokeId provided
+        if (operation.strokeId) {
+          strokesRef.current.delete(operation.strokeId);
+          setStrokes(Array.from(strokesRef.current.values()));
+        }
+        // Delete shape if shape data provided (use shape.id for accurate removal)
+        if (operation.shape) {
+          shapesRef.current.delete(operation.shape.id);
+          setShapes(Array.from(shapesRef.current.values()));
+        }
+        // Also try to delete from shapesRef by strokeId as fallback
+        if (operation.strokeId && !operation.shape) {
+          shapesRef.current.delete(operation.strokeId);
+          setShapes(Array.from(shapesRef.current.values()));
+        }
       } else if (operation.type === "erase" && operation.stroke) {
         strokesRef.current.set(operation.stroke.id, operation.stroke);
         setStrokes(Array.from(strokesRef.current.values()));
       }
     }
 
-    function onOperationRedo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
-      if (operation.type === "draw" && operation.stroke) {
-        strokesRef.current.set(operation.stroke.id, operation.stroke);
-        setStrokes(Array.from(strokesRef.current.values()));
+    function onOperationRedo(operation: { type: string; strokeId?: string; stroke?: Stroke; shape?: Shape }) {
+      if (operation.type === "draw") {
+        if (operation.stroke) {
+          strokesRef.current.set(operation.stroke.id, operation.stroke);
+          setStrokes(Array.from(strokesRef.current.values()));
+        }
+        if (operation.shape) {
+          shapesRef.current.set(operation.shape.id, operation.shape);
+          setShapes(Array.from(shapesRef.current.values()));
+        }
       } else if (operation.type === "erase" && operation.strokeId) {
         strokesRef.current.delete(operation.strokeId);
         setStrokes(Array.from(strokesRef.current.values()));

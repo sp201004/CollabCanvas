@@ -514,7 +514,7 @@ export function DrawingCanvas({
     >
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 touch-none"
+        className="absolute inset-0"
         style={{ 
           cursor: isPanning 
             ? "grabbing"

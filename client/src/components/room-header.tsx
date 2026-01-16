@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConnectionStatus } from "./connection-status";
 import { PerformanceMetrics } from "./performance-metrics";
+import { disconnectSocket } from "@/lib/socket";
 
 interface RoomHeaderProps {
   roomId: string;
@@ -75,6 +76,8 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
     if (socket && socket.connected) {
       socket.emit("room:leave", roomId);
     }
+    // Fully disconnect socket to prevent reconnection attempts
+    disconnectSocket();
     // Clear stored username so user can re-enter with new name if desired
     sessionStorage.removeItem("canvas_username");
     // Redirect to landing page
