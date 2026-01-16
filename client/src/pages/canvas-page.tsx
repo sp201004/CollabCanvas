@@ -8,10 +8,11 @@ import { UserPresence } from "@/components/user-presence";
 import { CursorOverlay } from "@/components/cursor-overlay";
 import { RoomHeader } from "@/components/room-header";
 import { UsernameDialog } from "@/components/username-dialog";
+import { ToolSettingsBar } from "@/components/tool-settings-bar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSocket } from "@/hooks/use-socket";
-import type { DrawingTool, Point, Stroke, User, CursorUpdate, Shape } from "@shared/schema";
+import type { DrawingTool, Point, Stroke, User, CursorUpdate, Shape, TextStyle } from "@shared/schema";
 
 function getRoomIdFromUrl(): string {
   const params = new URLSearchParams(window.location.search);
@@ -43,12 +44,14 @@ const emptySocketReturn = {
   addStrokePoint: () => {},
   endStroke: () => {},
   addShape: () => {},
+  updateShape: () => {},
   clearCanvas: () => {},
   undo: () => {},
   redo: () => {},
   addLocalStroke: () => {},
   updateLocalStroke: () => {},
   addLocalShape: () => {},
+  updateLocalShape: () => {},
 };
 
 export default function CanvasPage() {
@@ -63,6 +66,13 @@ export default function CanvasPage() {
   // Zoom and pan state
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  
+  // Selection state
+  const [selectedShape, setSelectedShape] = useState<Shape | null>(null);
+  
+  // Fill color and text style state
+  const [fillColor, setFillColor] = useState("transparent");
+  const [textStyle, setTextStyle] = useState<TextStyle>({ fontSize: 16, fontWeight: "normal", align: "left" });
   
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
@@ -89,12 +99,14 @@ export default function CanvasPage() {
     addStrokePoint,
     endStroke,
     addShape,
+    updateShape,
     clearCanvas,
     undo,
     redo,
     addLocalStroke,
     updateLocalStroke,
     addLocalShape,
+    updateLocalShape,
   } = username ? socketData : emptySocketReturn;
 
   // Redirect if invalid room
@@ -134,6 +146,8 @@ export default function CanvasPage() {
         setCurrentTool("line");
       } else if (e.key === "t" || e.key === "T") {
         setCurrentTool("text");
+      } else if (e.key === "v" || e.key === "V") {
+        setCurrentTool("select");
       } else if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -187,6 +201,33 @@ export default function CanvasPage() {
     [addShape]
   );
 
+  const handleShapeUpdate = useCallback(
+    (oldShape: Shape, newShape: Shape) => {
+      updateShape(oldShape, newShape);
+    },
+    [updateShape]
+  );
+
+  const handleLocalShapeUpdate = useCallback(
+    (shape: Shape) => {
+      updateLocalShape(shape);
+    },
+    [updateLocalShape]
+  );
+
+  const handleSelectShape = useCallback(
+    (shape: Shape | null) => {
+      setSelectedShape(shape);
+    },
+    []
+  );
+
+  const handleDeleteSelected = useCallback(() => {
+    // Shape deletion would need a dedicated delete operation
+    // For now we clear selection
+    setSelectedShape(null);
+  }, []);
+
   const handleCursorMove = useCallback(
     (position: Point | null, isDrawing: boolean) => {
       sendCursorMove(position, isDrawing);
@@ -214,6 +255,23 @@ export default function CanvasPage() {
   return (
     <div className="flex flex-col h-screen bg-background" data-testid="canvas-page">
       <RoomHeader roomId={roomId} isConnected={isConnected} socket={socket} />
+      <ToolSettingsBar
+        currentTool={currentTool}
+        strokeWidth={strokeWidth}
+        currentColor={currentColor}
+        fillColor={fillColor}
+        textStyle={textStyle}
+        zoom={zoom}
+        selectedShape={selectedShape}
+        onStrokeWidthChange={setStrokeWidth}
+        onColorChange={setCurrentColor}
+        onFillColorChange={setFillColor}
+        onTextStyleChange={setTextStyle}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleResetView}
+        onDeleteSelected={handleDeleteSelected}
+      />
       
       <div className="flex flex-1 overflow-hidden relative">
         {/* Left sidebar */}
@@ -283,14 +341,18 @@ export default function CanvasPage() {
               onStrokePoint={handleStrokePoint}
               onStrokeEnd={handleStrokeEnd}
               onShapeAdd={handleShapeAdd}
+              onShapeUpdate={handleShapeUpdate}
               onCursorMove={handleCursorMove}
               onLocalStrokeStart={addLocalStroke}
               onLocalStrokePoint={updateLocalStroke}
               onLocalShapeAdd={addLocalShape}
+              onLocalShapeUpdate={handleLocalShapeUpdate}
               zoom={zoom}
               pan={pan}
               onZoomChange={setZoom}
               onPanChange={setPan}
+              selectedShape={selectedShape}
+              onSelectShape={handleSelectShape}
             />
             <CursorOverlay
               cursors={cursors}
