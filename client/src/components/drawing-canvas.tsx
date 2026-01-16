@@ -19,105 +19,14 @@ interface DrawingCanvasProps {
   onStrokePoint: (strokeId: string, point: Point) => void;
   onStrokeEnd: (strokeId: string) => void;
   onShapeAdd: (shape: Shape) => void;
-  onShapeErase: (shapeId: string) => void;
   onCursorMove: (position: Point | null, isDrawing: boolean) => void;
   onLocalStrokeStart: (stroke: Stroke) => void;
   onLocalStrokePoint: (strokeId: string, point: Point) => void;
   onLocalShapeAdd: (shape: Shape) => void;
-  onLocalShapeErase: (shapeId: string) => void;
   zoom: number;
   pan: Point;
   onZoomChange: (zoom: number) => void;
   onPanChange: (pan: Point) => void;
-}
-
-// Hit-testing functions for eraser collision with shapes
-function pointToLineDistance(point: Point, lineStart: Point, lineEnd: Point): number {
-  const A = point.x - lineStart.x;
-  const B = point.y - lineStart.y;
-  const C = lineEnd.x - lineStart.x;
-  const D = lineEnd.y - lineStart.y;
-  
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let param = lenSq !== 0 ? dot / lenSq : -1;
-  
-  let xx, yy;
-  if (param < 0) {
-    xx = lineStart.x;
-    yy = lineStart.y;
-  } else if (param > 1) {
-    xx = lineEnd.x;
-    yy = lineEnd.y;
-  } else {
-    xx = lineStart.x + param * C;
-    yy = lineStart.y + param * D;
-  }
-  
-  const dx = point.x - xx;
-  const dy = point.y - yy;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function hitTestShape(point: Point, shape: Shape, tolerance: number): boolean {
-  const { startPoint, endPoint, type, width } = shape;
-  const hitRadius = tolerance + width / 2;
-  
-  switch (type) {
-    case "rectangle": {
-      // Check if point is near any of the 4 rectangle edges
-      const minX = Math.min(startPoint.x, endPoint.x);
-      const maxX = Math.max(startPoint.x, endPoint.x);
-      const minY = Math.min(startPoint.y, endPoint.y);
-      const maxY = Math.max(startPoint.y, endPoint.y);
-      
-      // Top edge
-      if (pointToLineDistance(point, { x: minX, y: minY }, { x: maxX, y: minY }) <= hitRadius) return true;
-      // Bottom edge
-      if (pointToLineDistance(point, { x: minX, y: maxY }, { x: maxX, y: maxY }) <= hitRadius) return true;
-      // Left edge
-      if (pointToLineDistance(point, { x: minX, y: minY }, { x: minX, y: maxY }) <= hitRadius) return true;
-      // Right edge
-      if (pointToLineDistance(point, { x: maxX, y: minY }, { x: maxX, y: maxY }) <= hitRadius) return true;
-      return false;
-    }
-    case "circle": {
-      // Check if point is near the ellipse border
-      const radiusX = Math.abs(endPoint.x - startPoint.x) / 2;
-      const radiusY = Math.abs(endPoint.y - startPoint.y) / 2;
-      const centerX = startPoint.x + (endPoint.x - startPoint.x) / 2;
-      const centerY = startPoint.y + (endPoint.y - startPoint.y) / 2;
-      
-      if (radiusX === 0 || radiusY === 0) return false;
-      
-      // Normalized distance from center (1.0 = on ellipse edge)
-      const normalizedDist = Math.sqrt(
-        Math.pow((point.x - centerX) / radiusX, 2) +
-        Math.pow((point.y - centerY) / radiusY, 2)
-      );
-      
-      // Check if point is within hitRadius of the ellipse edge
-      const avgRadius = (radiusX + radiusY) / 2;
-      const tolerance2 = hitRadius / avgRadius;
-      return Math.abs(normalizedDist - 1.0) <= tolerance2;
-    }
-    case "line": {
-      return pointToLineDistance(point, startPoint, endPoint) <= hitRadius;
-    }
-    case "text": {
-      // Simple bounding box hit test for text
-      const textWidth = (shape.text?.length || 0) * shape.width * 2.5;
-      const textHeight = shape.width * 4;
-      return (
-        point.x >= startPoint.x - hitRadius &&
-        point.x <= startPoint.x + textWidth + hitRadius &&
-        point.y >= startPoint.y - textHeight - hitRadius &&
-        point.y <= startPoint.y + hitRadius
-      );
-    }
-    default:
-      return false;
-  }
 }
 
 function generateStrokeId(): string {
@@ -139,12 +48,10 @@ export function DrawingCanvas({
   onStrokePoint,
   onStrokeEnd,
   onShapeAdd,
-  onShapeErase,
   onCursorMove,
   onLocalStrokeStart,
   onLocalStrokePoint,
   onLocalShapeAdd,
-  onLocalShapeErase,
   zoom,
   pan,
   onZoomChange,
@@ -174,9 +81,6 @@ export function DrawingCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<Point | null>(null);
   const panOffsetRef = useRef<Point>({ x: 0, y: 0 });
-  
-  // Track shapes erased during current eraser stroke to prevent duplicates
-  const erasedShapesRef = useRef<Set<string>>(new Set());
 
   // Transform screen coordinates to canvas coordinates (accounting for zoom and pan)
   const screenToCanvas = useCallback((screenX: number, screenY: number): Point => {
@@ -299,14 +203,24 @@ export function DrawingCanvas({
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, pan.x * dpr, pan.y * dpr);
 
-    // Draw all strokes
-    strokes.forEach((stroke) => {
-      drawStroke(ctx, stroke);
-    });
-
-    // Draw all shapes
-    shapes.forEach((shape) => {
-      drawShape(ctx, shape);
+    // Merge strokes and shapes into a single chronologically-ordered array
+    // This allows eraser strokes (destination-out) to erase pixels from shapes drawn before them
+    type DrawOperation = { type: 'stroke'; data: Stroke } | { type: 'shape'; data: Shape };
+    const operations: DrawOperation[] = [
+      ...strokes.map(s => ({ type: 'stroke' as const, data: s })),
+      ...shapes.map(s => ({ type: 'shape' as const, data: s })),
+    ];
+    
+    // Sort by timestamp for chronological rendering
+    operations.sort((a, b) => a.data.timestamp - b.data.timestamp);
+    
+    // Draw all operations in order
+    operations.forEach((op) => {
+      if (op.type === 'stroke') {
+        drawStroke(ctx, op.data);
+      } else {
+        drawShape(ctx, op.data);
+      }
     });
 
     // Draw preview shape if dragging
@@ -530,7 +444,8 @@ export function DrawingCanvas({
           timestamp: Date.now(),
         });
       } else if (currentStrokeRef.current) {
-        // Add stroke point
+        // Add stroke point (works for both brush and eraser)
+        // Eraser strokes use destination-out compositing to erase pixels
         const lastPoint = lastPointRef.current;
         if (lastPoint) {
           const dx = point.x - lastPoint.x;
@@ -542,24 +457,9 @@ export function DrawingCanvas({
         lastPointRef.current = point;
         onLocalStrokePoint(currentStrokeRef.current, point);
         onStrokePoint(currentStrokeRef.current, point);
-        
-        // Eraser shape hit-testing: check if eraser crosses any shapes
-        if (currentTool === "eraser") {
-          const eraserRadius = strokeWidth / 2;
-          for (const shape of shapes) {
-            // Skip if already erased in this stroke
-            if (erasedShapesRef.current.has(shape.id)) continue;
-            
-            if (hitTestShape(point, shape, eraserRadius)) {
-              erasedShapesRef.current.add(shape.id);
-              onLocalShapeErase(shape.id);
-              onShapeErase(shape.id);
-            }
-          }
-        }
       }
     },
-    [isDrawing, onStrokePoint, onCursorMove, onLocalStrokePoint, getCanvasPoint, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, isPanning, onPanChange, shapes, onShapeErase, onLocalShapeErase]
+    [isDrawing, onStrokePoint, onCursorMove, onLocalStrokePoint, getCanvasPoint, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, isPanning, onPanChange]
   );
 
   const handlePointerUp = useCallback(
@@ -606,7 +506,6 @@ export function DrawingCanvas({
       setIsDrawing(false);
       currentStrokeRef.current = null;
       lastPointRef.current = null;
-      erasedShapesRef.current.clear();
       onCursorMove(null, false);
     },
     [onStrokeEnd, onCursorMove, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, onShapeAdd, onLocalShapeAdd, getCanvasPoint, isPanning]

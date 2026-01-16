@@ -16,7 +16,6 @@ type ServerToClientEvents = {
   "room:joined": (roomId: string, userId: string, username: string, color: string) => void;
   "history:state": (data: { operationCount: number; undoneCount: number }) => void;
   "shape:add": (data: { shape: Shape; roomId: string }) => void;
-  "shape:erase": (data: { shapeId: string; roomId: string }) => void;
   "error": (message: string) => void;
 };
 
@@ -31,7 +30,6 @@ type ClientToServerEvents = {
   "operation:undo": (roomId: string) => void;
   "operation:redo": (roomId: string) => void;
   "shape:add": (data: { shape: Shape; roomId: string }) => void;
-  "shape:erase": (data: { shapeId: string; roomId: string }) => void;
 };
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;

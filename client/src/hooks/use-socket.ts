@@ -23,14 +23,12 @@ interface UseSocketReturn {
   addStrokePoint: (strokeId: string, point: Point) => void;
   endStroke: (strokeId: string) => void;
   addShape: (shape: Shape) => void;
-  eraseShape: (shapeId: string) => void;
   clearCanvas: () => void;
   undo: () => void;
   redo: () => void;
   addLocalStroke: (stroke: Stroke) => void;
   updateLocalStroke: (strokeId: string, point: Point) => void;
   addLocalShape: (shape: Shape) => void;
-  removeLocalShape: (shapeId: string) => void;
 }
 
 // Cursor debounce interval in ms (reduces socket traffic)
@@ -159,13 +157,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       }
     }
 
-    function onShapeErase(data: { shapeId: string; roomId: string }) {
-      if (data.roomId === roomId) {
-        shapesRef.current.delete(data.shapeId);
-        setShapes(Array.from(shapesRef.current.values()));
-      }
-    }
-
     function onCanvasClear() {
       strokesRef.current.clear();
       shapesRef.current.clear();
@@ -244,7 +235,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     socket.on("stroke:point", onStrokePoint);
     socket.on("stroke:end", onStrokeEnd);
     socket.on("shape:add", onShapeAdd);
-    socket.on("shape:erase", onShapeErase);
     socket.on("canvas:clear", onCanvasClear);
     socket.on("operation:undo", onOperationUndo);
     socket.on("operation:redo", onOperationRedo);
@@ -268,7 +258,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       socket.off("stroke:point", onStrokePoint);
       socket.off("stroke:end", onStrokeEnd);
       socket.off("shape:add", onShapeAdd);
-      socket.off("shape:erase", onShapeErase);
       socket.off("canvas:clear", onCanvasClear);
       socket.off("operation:undo", onOperationUndo);
       socket.off("operation:redo", onOperationRedo);
@@ -354,14 +343,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     [roomId]
   );
 
-  const eraseShape = useCallback(
-    (shapeId: string) => {
-      const socket = getSocket();
-      socket.emit("shape:erase", { shapeId, roomId });
-    },
-    [roomId]
-  );
-
   const clearCanvas = useCallback(() => {
     const socket = getSocket();
     socket.emit("canvas:clear", roomId);
@@ -396,11 +377,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     setShapes(Array.from(shapesRef.current.values()));
   }, []);
 
-  const removeLocalShape = useCallback((shapeId: string) => {
-    shapesRef.current.delete(shapeId);
-    setShapes(Array.from(shapesRef.current.values()));
-  }, []);
-
   return {
     isConnected,
     currentUser,
@@ -416,13 +392,11 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     addStrokePoint,
     endStroke,
     addShape,
-    eraseShape,
     clearCanvas,
     undo,
     redo,
     addLocalStroke,
     updateLocalStroke,
     addLocalShape,
-    removeLocalShape,
   };
 }

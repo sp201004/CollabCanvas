@@ -43,12 +43,21 @@ CollabCanvas is a multi-user drawing application where multiple people can draw 
 1. **Real-time Drawing**: See other users' drawings as they draw (not after)
 2. **Shape Tools**: Rectangle, circle, line tools with drag-and-drop
 3. **Inline Text Tool**: Click to place text, type directly on canvas (Canva-style)
-4. **Pan & Zoom**: Mouse wheel zoom, middle-click pan
-5. **Cursor Tracking**: Live cursor positions with debouncing (35ms)
-6. **User Presence**: Online user list with assigned colors
-7. **Drawing Tools**: Brush, eraser, color picker, stroke width
-8. **Room System**: Shareable 6-character room codes
-9. **Undo/Redo**: Global operation history across all users
+4. **Pixel-Based Eraser**: MS Paint/Photoshop-style erasing - gradual pixel removal, no object deletion
+5. **Pan & Zoom**: Mouse wheel zoom, middle-click pan
+6. **Cursor Tracking**: Live cursor positions with debouncing (35ms)
+7. **User Presence**: Online user list with assigned colors
+8. **Drawing Tools**: Brush, eraser, color picker, stroke width
+9. **Room System**: Shareable 6-character room codes
+10. **Undo/Redo**: Global operation history across all users
+
+## Eraser Implementation
+The eraser uses pixel-based erasing (like MS Paint/Photoshop):
+- Uses `globalCompositeOperation = "destination-out"` for Canvas API pixel clearing
+- Strokes and shapes are rendered in chronological order by timestamp
+- Eraser strokes affect pixels from any object drawn before them
+- Shapes/text are NOT deleted as objects - only pixels are cleared
+- Undo removes the eraser stroke, triggering a full canvas redraw that restores pixels
 
 ## WebSocket Events
 - `room:join` / `room:leave` - User room management

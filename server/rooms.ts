@@ -61,32 +61,6 @@ class RoomManager {
     room.shapes.delete(shapeId);
   }
 
-  // Erase a shape with proper operation history (supports undo/redo)
-  eraseShape(roomId: string, shapeId: string, userId: string): Shape | null {
-    const room = this.rooms.get(roomId);
-    if (!room) return null;
-    
-    const shape = room.shapes.get(shapeId);
-    if (!shape) return null;
-    
-    // Remove shape from current state
-    room.shapes.delete(shapeId);
-    
-    // Add erase operation to history with the shape data for undo
-    room.operationHistory.push({
-      type: "erase",
-      strokeId: shapeId,
-      shape: { ...shape },
-      userId,
-      timestamp: Date.now(),
-    });
-    
-    // Clear undone operations (new action invalidates redo stack)
-    room.undoneOperations = [];
-    
-    return shape;
-  }
-
   getRoom(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
   }
