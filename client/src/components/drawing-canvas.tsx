@@ -19,14 +19,18 @@ interface DrawingCanvasProps {
   onStrokePoint: (strokeId: string, point: Point) => void;
   onStrokeEnd: (strokeId: string) => void;
   onShapeAdd: (shape: Shape) => void;
+  onShapeUpdate: (oldShape: Shape, newShape: Shape) => void;
   onCursorMove: (position: Point | null, isDrawing: boolean) => void;
   onLocalStrokeStart: (stroke: Stroke) => void;
   onLocalStrokePoint: (strokeId: string, point: Point) => void;
   onLocalShapeAdd: (shape: Shape) => void;
+  onLocalShapeUpdate: (shape: Shape) => void;
   zoom: number;
   pan: Point;
   onZoomChange: (zoom: number) => void;
   onPanChange: (pan: Point) => void;
+  selectedShape: Shape | null;
+  onSelectShape: (shape: Shape | null) => void;
 }
 
 function generateStrokeId(): string {
@@ -48,14 +52,18 @@ export function DrawingCanvas({
   onStrokePoint,
   onStrokeEnd,
   onShapeAdd,
+  onShapeUpdate,
   onCursorMove,
   onLocalStrokeStart,
   onLocalStrokePoint,
   onLocalShapeAdd,
+  onLocalShapeUpdate,
   zoom,
   pan,
   onZoomChange,
   onPanChange,
+  selectedShape,
+  onSelectShape,
 }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -82,6 +90,11 @@ export function DrawingCanvas({
   const panStartRef = useRef<Point | null>(null);
   const panOffsetRef = useRef<Point>({ x: 0, y: 0 });
 
+  // Selection/Move state
+  const [isDraggingShape, setIsDraggingShape] = useState(false);
+  const dragStartRef = useRef<Point | null>(null);
+  const dragShapeStartRef = useRef<Shape | null>(null);
+
   // Transform screen coordinates to canvas coordinates (accounting for zoom and pan)
   const screenToCanvas = useCallback((screenX: number, screenY: number): Point => {
     return {
@@ -89,6 +102,60 @@ export function DrawingCanvas({
       y: (screenY - pan.y) / zoom,
     };
   }, [zoom, pan]);
+
+  // Hit-testing function to detect if a point is on a shape
+  const hitTestShape = useCallback((point: Point): Shape | null => {
+    // Iterate in reverse order to get the topmost shape first
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      const shape = shapes[i];
+      const { startPoint, endPoint, type, width } = shape;
+      const padding = Math.max(width, 8); // Minimum clickable area
+
+      if (type === "rectangle") {
+        const minX = Math.min(startPoint.x, endPoint.x) - padding;
+        const maxX = Math.max(startPoint.x, endPoint.x) + padding;
+        const minY = Math.min(startPoint.y, endPoint.y) - padding;
+        const maxY = Math.max(startPoint.y, endPoint.y) + padding;
+        if (point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY) {
+          return shape;
+        }
+      } else if (type === "circle") {
+        const centerX = (startPoint.x + endPoint.x) / 2;
+        const centerY = (startPoint.y + endPoint.y) / 2;
+        const radiusX = Math.abs(endPoint.x - startPoint.x) / 2 + padding;
+        const radiusY = Math.abs(endPoint.y - startPoint.y) / 2 + padding;
+        const dx = point.x - centerX;
+        const dy = point.y - centerY;
+        if ((dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY) <= 1) {
+          return shape;
+        }
+      } else if (type === "line") {
+        const dx = endPoint.x - startPoint.x;
+        const dy = endPoint.y - startPoint.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        if (length === 0) continue;
+        const t = Math.max(0, Math.min(1, 
+          ((point.x - startPoint.x) * dx + (point.y - startPoint.y) * dy) / (length * length)
+        ));
+        const closestX = startPoint.x + t * dx;
+        const closestY = startPoint.y + t * dy;
+        const dist = Math.sqrt((point.x - closestX) ** 2 + (point.y - closestY) ** 2);
+        if (dist <= padding) {
+          return shape;
+        }
+      } else if (type === "text" && shape.text) {
+        const textWidth = shape.text.length * (shape.width * 2); // Approximate
+        const textHeight = shape.width * 4;
+        if (point.x >= startPoint.x - padding && 
+            point.x <= startPoint.x + textWidth + padding &&
+            point.y >= startPoint.y - textHeight - padding && 
+            point.y <= startPoint.y + padding) {
+          return shape;
+        }
+      }
+    }
+    return null;
+  }, [shapes]);
 
   const getCanvasPoint = useCallback((e: MouseEvent | TouchEvent | React.PointerEvent): Point | null => {
     const canvas = canvasRef.current;
@@ -229,7 +296,34 @@ export function DrawingCanvas({
       drawShape(ctx, previewShape);
       ctx.globalAlpha = 1;
     }
-  }, [strokes, shapes, drawStroke, drawShape, previewShape, zoom, pan]);
+
+    // Draw selection bounding box
+    if (selectedShape) {
+      ctx.strokeStyle = "#3B82F6";
+      ctx.lineWidth = 2 / zoom;
+      ctx.setLineDash([6 / zoom, 4 / zoom]);
+      
+      const { startPoint, endPoint, type } = selectedShape;
+      let boxMinX: number, boxMinY: number, boxMaxX: number, boxMaxY: number;
+
+      if (type === "text" && selectedShape.text) {
+        const textWidth = selectedShape.text.length * (selectedShape.width * 2);
+        const textHeight = selectedShape.width * 4;
+        boxMinX = startPoint.x - 4;
+        boxMinY = startPoint.y - textHeight - 4;
+        boxMaxX = startPoint.x + textWidth + 4;
+        boxMaxY = startPoint.y + 4;
+      } else {
+        boxMinX = Math.min(startPoint.x, endPoint.x) - 4;
+        boxMinY = Math.min(startPoint.y, endPoint.y) - 4;
+        boxMaxX = Math.max(startPoint.x, endPoint.x) + 4;
+        boxMaxY = Math.max(startPoint.y, endPoint.y) + 4;
+      }
+
+      ctx.strokeRect(boxMinX, boxMinY, boxMaxX - boxMinX, boxMaxY - boxMinY);
+      ctx.setLineDash([]);
+    }
+  }, [strokes, shapes, drawStroke, drawShape, previewShape, zoom, pan, selectedShape]);
 
   useEffect(() => {
     if (animationFrameRef.current) {
@@ -296,6 +390,7 @@ export function DrawingCanvas({
   }, [zoom, pan, onZoomChange, onPanChange]);
 
   const isShapeTool = currentTool === "rectangle" || currentTool === "circle" || currentTool === "line" || currentTool === "text";
+  const isSelectTool = currentTool === "select";
 
   // Commit text from inline editor to canvas
   const commitText = useCallback(() => {
@@ -365,6 +460,21 @@ export function DrawingCanvas({
       const point = getCanvasPoint(e);
       if (!point) return;
 
+      // Handle select tool - try to select a shape
+      if (isSelectTool) {
+        const hitShape = hitTestShape(point);
+        if (hitShape) {
+          onSelectShape(hitShape);
+          setIsDraggingShape(true);
+          dragStartRef.current = point;
+          dragShapeStartRef.current = { ...hitShape };
+        } else {
+          onSelectShape(null);
+        }
+        setIsDrawing(false);
+        return;
+      }
+
       // Handle text tool - show inline text editor on click
       if (currentTool === "text") {
         const rect = container.getBoundingClientRect();
@@ -408,7 +518,7 @@ export function DrawingCanvas({
         onCursorMove(point, true);
       }
     },
-    [currentColor, strokeWidth, userId, currentTool, onStrokeStart, onCursorMove, onLocalStrokeStart, getCanvasPoint, isShapeTool, pan, textInput.isActive, commitText]
+    [currentColor, strokeWidth, userId, currentTool, onStrokeStart, onCursorMove, onLocalStrokeStart, getCanvasPoint, isShapeTool, isSelectTool, pan, textInput.isActive, commitText, hitTestShape, onSelectShape]
   );
 
   const handlePointerMove = useCallback(
@@ -426,6 +536,26 @@ export function DrawingCanvas({
 
       const point = getCanvasPoint(e);
       if (!point) return;
+
+      // Handle shape dragging
+      if (isDraggingShape && dragStartRef.current && dragShapeStartRef.current && selectedShape) {
+        const dx = point.x - dragStartRef.current.x;
+        const dy = point.y - dragStartRef.current.y;
+        const movedShape: Shape = {
+          ...dragShapeStartRef.current,
+          startPoint: {
+            x: dragShapeStartRef.current.startPoint.x + dx,
+            y: dragShapeStartRef.current.startPoint.y + dy,
+          },
+          endPoint: {
+            x: dragShapeStartRef.current.endPoint.x + dx,
+            y: dragShapeStartRef.current.endPoint.y + dy,
+          },
+        };
+        onLocalShapeUpdate(movedShape);
+        onSelectShape(movedShape);
+        return;
+      }
 
       onCursorMove(point, isDrawing);
 
@@ -459,7 +589,7 @@ export function DrawingCanvas({
         onStrokePoint(currentStrokeRef.current, point);
       }
     },
-    [isDrawing, onStrokePoint, onCursorMove, onLocalStrokePoint, getCanvasPoint, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, isPanning, onPanChange]
+    [isDrawing, onStrokePoint, onCursorMove, onLocalStrokePoint, getCanvasPoint, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, isPanning, onPanChange, isDraggingShape, selectedShape, onLocalShapeUpdate, onSelectShape]
   );
 
   const handlePointerUp = useCallback(
@@ -478,6 +608,35 @@ export function DrawingCanvas({
       if (isPanning) {
         setIsPanning(false);
         panStartRef.current = null;
+        return;
+      }
+
+      // End shape dragging
+      if (isDraggingShape && dragShapeStartRef.current && selectedShape) {
+        const point = getCanvasPoint(e);
+        if (point && dragStartRef.current) {
+          const dx = point.x - dragStartRef.current.x;
+          const dy = point.y - dragStartRef.current.y;
+          // Only emit update if shape actually moved
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+            const movedShape: Shape = {
+              ...dragShapeStartRef.current,
+              startPoint: {
+                x: dragShapeStartRef.current.startPoint.x + dx,
+                y: dragShapeStartRef.current.startPoint.y + dy,
+              },
+              endPoint: {
+                x: dragShapeStartRef.current.endPoint.x + dx,
+                y: dragShapeStartRef.current.endPoint.y + dy,
+              },
+            };
+            onShapeUpdate(dragShapeStartRef.current, movedShape);
+            onSelectShape(movedShape);
+          }
+        }
+        setIsDraggingShape(false);
+        dragStartRef.current = null;
+        dragShapeStartRef.current = null;
         return;
       }
 
@@ -508,7 +667,7 @@ export function DrawingCanvas({
       lastPointRef.current = null;
       onCursorMove(null, false);
     },
-    [onStrokeEnd, onCursorMove, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, onShapeAdd, onLocalShapeAdd, getCanvasPoint, isPanning]
+    [onStrokeEnd, onCursorMove, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, onShapeAdd, onLocalShapeAdd, getCanvasPoint, isPanning, isDraggingShape, selectedShape, onShapeUpdate, onSelectShape]
   );
 
   const handlePointerLeave = useCallback(() => {
@@ -534,6 +693,10 @@ export function DrawingCanvas({
         style={{ 
           cursor: isPanning 
             ? "grabbing"
+            : isDraggingShape
+              ? "move"
+            : isSelectTool 
+              ? "default"
             : isShapeTool 
               ? "crosshair"
               : currentTool === "eraser" 
