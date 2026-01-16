@@ -65,21 +65,21 @@ class RoomManager {
     return this.rooms.get(roomId);
   }
 
-  addUserToRoom(roomId: string, odifyUserId: string, username: string): User {
+  addUserToRoom(roomId: string, socketUserId: string, username: string): User {
     const room = this.getOrCreateRoom(roomId);
     
     const color = USER_COLORS[room.userColorIndex % USER_COLORS.length];
     room.userColorIndex++;
 
     const user: User = {
-      id: odifyUserId,
+      id: socketUserId,
       username,
       color,
       cursorPosition: null,
       isDrawing: false,
     };
 
-    room.users.set(odifyUserId, user);
+    room.users.set(socketUserId, user);
     return user;
   }
 
@@ -87,10 +87,10 @@ class RoomManager {
     return /^[A-Z0-9]{6}$/.test(roomId);
   }
 
-  removeUserFromRoom(roomId: string, odifyUserId: string): void {
+  removeUserFromRoom(roomId: string, socketUserId: string): void {
     const room = this.rooms.get(roomId);
     if (room) {
-      room.users.delete(odifyUserId);
+      room.users.delete(socketUserId);
       
       if (room.users.size === 0) {
         setTimeout(() => {
@@ -111,14 +111,14 @@ class RoomManager {
 
   updateUserCursor(
     roomId: string,
-    odifyUserId: string,
+    socketUserId: string,
     position: { x: number; y: number } | null,
     isDrawing: boolean
   ): void {
     const room = this.rooms.get(roomId);
     if (!room) return;
     
-    const user = room.users.get(odifyUserId);
+    const user = room.users.get(socketUserId);
     if (user) {
       user.cursorPosition = position;
       user.isDrawing = isDrawing;

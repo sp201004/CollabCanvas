@@ -20,7 +20,7 @@ export function CursorOverlay({
 }: CursorOverlayProps) {
   const visibleCursors = useMemo(() => {
     const result: Array<{
-      odifyUserId: string;
+      socketUserId: string;
       username: string;
       color: string;
       x: number;
@@ -28,15 +28,15 @@ export function CursorOverlay({
       isDrawing: boolean;
     }> = [];
 
-    cursors.forEach((cursor, odifyUserId) => {
-      if (odifyUserId === currentUserId) return;
+    cursors.forEach((cursor, socketUserId) => {
+      if (socketUserId === currentUserId) return;
       if (!cursor.position) return;
 
-      const user = users.find((u) => u.id === odifyUserId);
+      const user = users.find((u) => u.id === socketUserId);
       if (!user) return;
 
       result.push({
-        odifyUserId,
+        socketUserId,
         username: user.username,
         color: user.color,
         x: cursor.position.x,
@@ -61,7 +61,7 @@ export function CursorOverlay({
 
         return (
           <div
-            key={cursor.odifyUserId}
+            key={cursor.socketUserId}
             className="absolute transition-transform duration-75 ease-out"
             style={{
               transform: `translate(${screenX}px, ${screenY}px)`,

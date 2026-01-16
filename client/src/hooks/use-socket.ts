@@ -58,6 +58,8 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
 
     const socket = getSocket();
 
+    // Called on initial connection AND on reconnection (Socket.io auto-reconnects)
+    // Re-joining the room triggers canvas:state which re-syncs all strokes/shapes
     function onConnect() {
       setIsConnected(true);
       socket.emit("room:join", { roomId, username });
@@ -67,10 +69,16 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       setIsConnected(false);
     }
 
-    function onRoomJoined(joinedRoomId: string, odifyUserId: string, userName: string, color: string) {
+    // Handle connection errors gracefully
+    function onConnectError(error: Error) {
+      console.warn("Socket connection error:", error.message);
+      setIsConnected(false);
+    }
+
+    function onRoomJoined(joinedRoomId: string, socketUserId: string, userName: string, color: string) {
       if (joinedRoomId === roomId) {
         setCurrentUser({
-          id: odifyUserId,
+          id: socketUserId,
           username: userName,
           color,
           cursorPosition: null,
@@ -199,6 +207,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
     socket.on("room:joined", onRoomJoined);
     socket.on("user:list", onUserList);
     socket.on("user:joined", onUserJoined);
@@ -221,6 +230,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
       socket.off("room:joined", onRoomJoined);
       socket.off("user:list", onUserList);
       socket.off("user:joined", onUserJoined);

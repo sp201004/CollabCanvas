@@ -455,7 +455,12 @@ export function DrawingCanvas({
     (e: React.PointerEvent) => {
       const canvas = canvasRef.current;
       if (canvas) {
-        canvas.releasePointerCapture(e.pointerId);
+        // Safely release pointer capture - may not be set for all interactions
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {
+          // Pointer was not captured, ignore
+        }
       }
 
       // End panning

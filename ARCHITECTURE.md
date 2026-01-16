@@ -318,6 +318,28 @@ const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
 - Uppercase alphanumeric only
 - Validated on client AND server
 
+## Reconnection Handling
+
+Socket.io handles reconnection automatically. When a client reconnects:
+
+1. `connect` event fires → client re-emits `room:join`
+2. Server responds with `room:joined` and fresh `canvas:state`
+3. Client replaces local strokes/shapes with server state
+4. User seamlessly resumes drawing
+
+This ensures no data loss during temporary network issues.
+
+```typescript
+// Reconnection is handled by the same connect handler
+function onConnect() {
+  setIsConnected(true);
+  socket.emit("room:join", { roomId, username });
+  // Server will respond with full canvas:state
+}
+```
+
+**Note**: Any strokes drawn during disconnection are lost (intentional - no local persistence).
+
 ## Security Considerations
 
 1. **No authentication** - Anyone with room link can join
