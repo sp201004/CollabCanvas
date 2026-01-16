@@ -41,14 +41,15 @@ CollabCanvas is a multi-user drawing application where multiple people can draw 
 
 ## Key Features
 1. **Real-time Drawing**: See other users' drawings as they draw (not after)
-2. **Shape Tools**: Rectangle, circle, line, text tools
-3. **Pan & Zoom**: Mouse wheel zoom, middle-click pan
-4. **Cursor Tracking**: Live cursor positions with debouncing (35ms)
-5. **User Presence**: Online user list with assigned colors
-6. **Drawing Tools**: Brush, eraser, color picker, stroke width
-7. **Room System**: Shareable 6-character room codes
-8. **Undo/Redo**: Global operation history across all users
-9. **Persistence**: LocalStorage auto-save + JSON export/import
+2. **Shape Tools**: Rectangle, circle, line tools with drag-and-drop
+3. **Inline Text Tool**: Click to place text, type directly on canvas (Canva-style)
+4. **Pan & Zoom**: Mouse wheel zoom, middle-click pan
+5. **Cursor Tracking**: Live cursor positions with debouncing (35ms)
+6. **User Presence**: Online user list with assigned colors
+7. **Drawing Tools**: Brush, eraser, color picker, stroke width
+8. **Room System**: Shareable 6-character room codes
+9. **Undo/Redo**: Global operation history across all users
+10. **Persistence**: LocalStorage auto-save + JSON export/import
 
 ## WebSocket Events
 - `room:join` / `room:leave` - User room management

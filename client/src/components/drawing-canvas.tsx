@@ -1,6 +1,13 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { Stroke, Point, DrawingTool, Shape } from "@shared/schema";
 
+interface TextInputState {
+  isActive: boolean;
+  position: Point;
+  screenPosition: { x: number; y: number };
+  text: string;
+}
+
 interface DrawingCanvasProps {
   strokes: Stroke[];
   shapes: Shape[];
@@ -60,6 +67,15 @@ export function DrawingCanvas({
   // Shape drawing state
   const [shapeStart, setShapeStart] = useState<Point | null>(null);
   const [previewShape, setPreviewShape] = useState<Shape | null>(null);
+  
+  // Inline text input state
+  const [textInput, setTextInput] = useState<TextInputState>({
+    isActive: false,
+    position: { x: 0, y: 0 },
+    screenPosition: { x: 0, y: 0 },
+    text: "",
+  });
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
   
   // Pan state
   const [isPanning, setIsPanning] = useState(false);
@@ -271,11 +287,60 @@ export function DrawingCanvas({
 
   const isShapeTool = currentTool === "rectangle" || currentTool === "circle" || currentTool === "line" || currentTool === "text";
 
+  // Commit text from inline editor to canvas
+  const commitText = useCallback(() => {
+    if (!textInput.isActive || !textInput.text.trim()) {
+      setTextInput({
+        isActive: false,
+        position: { x: 0, y: 0 },
+        screenPosition: { x: 0, y: 0 },
+        text: "",
+      });
+      return;
+    }
+
+    const newShape: Shape = {
+      id: generateShapeId(),
+      type: "text",
+      startPoint: textInput.position,
+      endPoint: textInput.position,
+      color: currentColor,
+      width: strokeWidth,
+      userId,
+      timestamp: Date.now(),
+      text: textInput.text.trim(),
+    };
+
+    onLocalShapeAdd(newShape);
+    onShapeAdd(newShape);
+
+    setTextInput({
+      isActive: false,
+      position: { x: 0, y: 0 },
+      screenPosition: { x: 0, y: 0 },
+      text: "",
+    });
+  }, [textInput, currentColor, strokeWidth, userId, onLocalShapeAdd, onShapeAdd]);
+
+  // Focus text input when it becomes active
+  useEffect(() => {
+    if (textInput.isActive && textInputRef.current) {
+      textInputRef.current.focus();
+    }
+  }, [textInput.isActive]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
+
+      // If text input is active, commit it first
+      if (textInput.isActive) {
+        commitText();
+        return;
+      }
 
       canvas.setPointerCapture(e.pointerId);
 
@@ -290,8 +355,24 @@ export function DrawingCanvas({
       const point = getCanvasPoint(e);
       if (!point) return;
 
+      // Handle text tool - show inline text editor on click
+      if (currentTool === "text") {
+        const rect = container.getBoundingClientRect();
+        const screenX = e.clientX - rect.left;
+        const screenY = e.clientY - rect.top;
+        
+        setTextInput({
+          isActive: true,
+          position: point,
+          screenPosition: { x: screenX, y: screenY },
+          text: "",
+        });
+        setIsDrawing(false);
+        return;
+      }
+
       if (isShapeTool) {
-        // Start shape drawing
+        // Start shape drawing (rectangle, circle, line)
         setShapeStart(point);
         setIsDrawing(true);
         onCursorMove(point, true);
@@ -317,7 +398,7 @@ export function DrawingCanvas({
         onCursorMove(point, true);
       }
     },
-    [currentColor, strokeWidth, userId, currentTool, onStrokeStart, onCursorMove, onLocalStrokeStart, getCanvasPoint, isShapeTool, pan]
+    [currentColor, strokeWidth, userId, currentTool, onStrokeStart, onCursorMove, onLocalStrokeStart, getCanvasPoint, isShapeTool, pan, textInput.isActive, commitText]
   );
 
   const handlePointerMove = useCallback(
@@ -384,40 +465,21 @@ export function DrawingCanvas({
         return;
       }
 
-      if (isShapeTool && shapeStart) {
+      if (isShapeTool && shapeStart && currentTool !== "text") {
         const point = getCanvasPoint(e);
         if (point) {
-          if (currentTool === "text") {
-            const text = prompt("Enter text:");
-            if (text) {
-              const newShape: Shape = {
-                id: generateShapeId(),
-                type: "text",
-                startPoint: shapeStart,
-                endPoint: point,
-                color: currentColor,
-                width: strokeWidth,
-                userId,
-                timestamp: Date.now(),
-                text,
-              };
-              onLocalShapeAdd(newShape);
-              onShapeAdd(newShape);
-            }
-          } else {
-            const newShape: Shape = {
-              id: generateShapeId(),
-              type: currentTool as "rectangle" | "circle" | "line",
-              startPoint: shapeStart,
-              endPoint: point,
-              color: currentColor,
-              width: strokeWidth,
-              userId,
-              timestamp: Date.now(),
-            };
-            onLocalShapeAdd(newShape);
-            onShapeAdd(newShape);
-          }
+          const newShape: Shape = {
+            id: generateShapeId(),
+            type: currentTool as "rectangle" | "circle" | "line",
+            startPoint: shapeStart,
+            endPoint: point,
+            color: currentColor,
+            width: strokeWidth,
+            userId,
+            timestamp: Date.now(),
+          };
+          onLocalShapeAdd(newShape);
+          onShapeAdd(newShape);
         }
         setShapeStart(null);
         setPreviewShape(null);
@@ -468,6 +530,45 @@ export function DrawingCanvas({
         onPointerLeave={handlePointerLeave}
         data-testid="drawing-canvas"
       />
+      
+      {/* Inline text input overlay */}
+      {textInput.isActive && (
+        <textarea
+          ref={textInputRef}
+          className="absolute border-2 border-primary bg-transparent outline-none resize-none overflow-hidden"
+          style={{
+            left: textInput.screenPosition.x,
+            top: textInput.screenPosition.y,
+            minWidth: "100px",
+            minHeight: "30px",
+            fontSize: `${strokeWidth * 4 * zoom}px`,
+            fontFamily: "sans-serif",
+            color: currentColor,
+            lineHeight: 1.2,
+            padding: "2px 4px",
+            zIndex: 100,
+          }}
+          value={textInput.text}
+          onChange={(e) => setTextInput((prev) => ({ ...prev, text: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              commitText();
+            }
+            if (e.key === "Escape") {
+              setTextInput({
+                isActive: false,
+                position: { x: 0, y: 0 },
+                screenPosition: { x: 0, y: 0 },
+                text: "",
+              });
+            }
+          }}
+          onBlur={commitText}
+          placeholder="Type here..."
+          data-testid="text-input-overlay"
+        />
+      )}
       
       {/* Zoom indicator */}
       <div className="absolute bottom-2 right-2 bg-background/80 px-2 py-1 rounded text-xs text-muted-foreground" data-testid="zoom-indicator">

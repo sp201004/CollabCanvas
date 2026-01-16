@@ -11,7 +11,7 @@ A multi-user drawing application where multiple people can draw simultaneously o
 - **Rectangle Tool** - Draw rectangles with drag-and-drop
 - **Circle Tool** - Draw ellipses/circles with drag-and-drop
 - **Line Tool** - Draw straight lines between two points
-- **Text Tool** - Add text annotations to the canvas
+- **Inline Text Tool** - Click to place text, type directly on canvas (Canva-style)
 - **Color Picker** - 8 preset colors + custom color input
 
 ### Real-time Collaboration
@@ -148,7 +148,6 @@ Approximately **15-18 hours** of development time, including:
 1. **No server persistence** - Canvas state is lost when all users leave (after 60s timeout)
 2. **No authentication** - Anyone with the room link can join
 3. **Global undo** - Users can undo each other's work (intentional for collaboration)
-4. **Text tool uses prompt** - Basic text input via browser prompt dialog
 
 ## Browser Support
 
