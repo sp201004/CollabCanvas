@@ -144,19 +144,46 @@ export function DrawingCanvas({
       ctx.fillStyle = stroke.color;
       ctx.fillText(stroke.text, point.x, point.y);
     } else {
-      ctx.beginPath();
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-
-      for (let i = 1; i < stroke.points.length; i++) {
-        const p0 = stroke.points[i - 1];
-        const p1 = stroke.points[i];
-        const midX = (p0.x + p1.x) / 2;
-        const midY = (p0.y + p1.y) / 2;
-        ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+      const points = stroke.points;
+      
+      if (points.length === 1) {
+        ctx.beginPath();
+        ctx.arc(points[0].x, points[0].y, stroke.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+      
+      if (points.length === 2) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.stroke();
+        return;
       }
 
-      const lastPoint = stroke.points[stroke.points.length - 1];
-      ctx.lineTo(lastPoint.x, lastPoint.y);
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+
+      for (let i = 1; i < points.length; i++) {
+        const p0 = points[i - 1];
+        const p1 = points[i];
+        const midX = (p0.x + p1.x) / 2;
+        const midY = (p0.y + p1.y) / 2;
+
+        if (i === 1) {
+          ctx.lineTo(midX, midY);
+        } else {
+          ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+        }
+      }
+
+      const lastPoint = points[points.length - 1];
+      ctx.quadraticCurveTo(
+        points[points.length - 2].x + (lastPoint.x - points[points.length - 2].x) * 0.5,
+        points[points.length - 2].y + (lastPoint.y - points[points.length - 2].y) * 0.5,
+        lastPoint.x,
+        lastPoint.y
+      );
       ctx.stroke();
     }
 
@@ -394,10 +421,26 @@ export function DrawingCanvas({
       const dy = point.y - lastPointRef.current.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance > 2) {
+      const minDistance = 1;
+      const maxDistance = 8;
+
+      if (distance >= minDistance) {
+        if (distance > maxDistance) {
+          const steps = Math.ceil(distance / maxDistance);
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const interpPoint = {
+              x: lastPointRef.current.x + dx * t,
+              y: lastPointRef.current.y + dy * t,
+            };
+            onLocalStrokePoint(currentStrokeRef.current, interpPoint);
+            onStrokePoint(currentStrokeRef.current, interpPoint);
+          }
+        } else {
+          onLocalStrokePoint(currentStrokeRef.current, point);
+          onStrokePoint(currentStrokeRef.current, point);
+        }
         lastPointRef.current = point;
-        onLocalStrokePoint(currentStrokeRef.current, point);
-        onStrokePoint(currentStrokeRef.current, point);
       }
 
       onCursorMove(point, true);
