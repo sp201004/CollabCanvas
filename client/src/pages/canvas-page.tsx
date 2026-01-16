@@ -69,7 +69,7 @@ export default function CanvasPage() {
   
   // Selection state
   const [selectedShape, setSelectedShape] = useState<Shape | null>(null);
-  
+
   // Fill color and text style state
   const [fillColor, setFillColor] = useState("transparent");
   const [textStyle, setTextStyle] = useState<TextStyle>({ fontSize: 16, fontWeight: "normal", align: "left" });
@@ -108,6 +108,25 @@ export default function CanvasPage() {
     addLocalShape,
     updateLocalShape,
   } = username ? socketData : emptySocketReturn;
+
+  // Sync selectedShape with shapes array - clear selection if shape no longer matches
+  useEffect(() => {
+    if (selectedShape) {
+      const shapeInArray = shapes.find(s => s.id === selectedShape.id);
+      if (!shapeInArray) {
+        // Shape was deleted
+        setSelectedShape(null);
+      } else if (
+        shapeInArray.startPoint.x !== selectedShape.startPoint.x ||
+        shapeInArray.startPoint.y !== selectedShape.startPoint.y ||
+        shapeInArray.endPoint.x !== selectedShape.endPoint.x ||
+        shapeInArray.endPoint.y !== selectedShape.endPoint.y
+      ) {
+        // Shape position changed (due to undo/redo or external update) - update selection
+        setSelectedShape(shapeInArray);
+      }
+    }
+  }, [shapes, selectedShape]);
 
   // Redirect if invalid room
   useEffect(() => {
