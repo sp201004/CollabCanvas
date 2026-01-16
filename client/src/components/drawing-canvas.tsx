@@ -68,8 +68,12 @@ export function DrawingCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<Point | null>(null);
   const panOffsetRef = useRef<Point>({ x: 0, y: 0 });
+  
+  const [cursorScreenPos, setCursorScreenPos] = useState<{ x: number; y: number } | null>(null);
 
   const isShapeTool = currentTool === "rectangle" || currentTool === "circle" || currentTool === "line";
+  const isBrushOrEraser = currentTool === "brush" || currentTool === "eraser";
+  const showCustomCursor = isBrushOrEraser && cursorScreenPos !== null;
 
   const getCanvasPoint = useCallback((e: MouseEvent | TouchEvent | React.PointerEvent): Point | null => {
     const canvas = canvasRef.current;
@@ -290,6 +294,9 @@ export function DrawingCanvas({
       const container = containerRef.current;
       if (!canvas || !container) return;
 
+      const rect = container.getBoundingClientRect();
+      setCursorScreenPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+
       if (textInput.isActive) {
         commitText();
         return;
@@ -353,6 +360,12 @@ export function DrawingCanvas({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        setCursorScreenPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }
+
       if (isPanning && panStartRef.current) {
         const dx = e.clientX - panStartRef.current.x;
         const dy = e.clientY - panStartRef.current.y;
@@ -442,6 +455,7 @@ export function DrawingCanvas({
   );
 
   const handlePointerLeave = useCallback(() => {
+    setCursorScreenPos(null);
     onCursorMove(null, false);
   }, [onCursorMove]);
 
@@ -468,6 +482,10 @@ export function DrawingCanvas({
     [zoom, pan, onZoomChange, onPanChange]
   );
 
+  const cursorSize = strokeWidth * zoom;
+  const minCursorSize = 4;
+  const displayCursorSize = Math.max(cursorSize, minCursorSize);
+
   return (
     <div 
       ref={containerRef} 
@@ -476,7 +494,8 @@ export function DrawingCanvas({
     >
       <canvas
         ref={canvasRef}
-        className="touch-none cursor-crosshair"
+        className="touch-none"
+        style={{ cursor: isBrushOrEraser ? "none" : currentTool === "text" ? "text" : "crosshair" }}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -484,6 +503,28 @@ export function DrawingCanvas({
         onPointerLeave={handlePointerLeave}
         data-testid="drawing-canvas"
       />
+      
+      {showCustomCursor && cursorScreenPos && (
+        <div
+          className="pointer-events-none absolute rounded-full"
+          style={{
+            left: cursorScreenPos.x - displayCursorSize / 2,
+            top: cursorScreenPos.y - displayCursorSize / 2,
+            width: displayCursorSize,
+            height: displayCursorSize,
+            ...(currentTool === "brush"
+              ? {
+                  backgroundColor: currentColor,
+                  opacity: 0.5,
+                }
+              : {
+                  backgroundColor: "transparent",
+                  border: "2px dashed rgba(100, 100, 100, 0.8)",
+                }),
+          }}
+          data-testid="custom-cursor"
+        />
+      )}
       
       {textInput.isActive && (
         <textarea
