@@ -82,18 +82,21 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
   };
 
   return (
-    <header className="flex items-center justify-between h-12 sm:h-14 md:h-16 px-2 sm:px-4 md:px-6 bg-card border-b border-card-border" data-testid="room-header">
-      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
-        <h1 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight">CollabCanvas</h1>
+    // RESPONSIVE FIX: Use min-h instead of fixed h to allow wrapping on mobile
+    // flex-wrap ensures header content stacks when viewport is narrow
+    <header className="flex flex-wrap items-center justify-between min-h-12 gap-2 py-2 px-2 sm:px-4 md:px-6 bg-card border-b border-card-border" data-testid="room-header">
+      {/* Left section: Title + Room info - always visible */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <h1 className="text-sm sm:text-base font-semibold tracking-tight shrink-0">CollabCanvas</h1>
         
-        {/* Current room display */}
-        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 bg-muted rounded-md">
-          <span className="text-[10px] sm:text-xs font-mono text-muted-foreground hidden sm:inline">Room:</span>
-          <span className="text-xs sm:text-sm font-mono font-medium" data-testid="text-room-id">{roomId}</span>
+        {/* Current room display - always visible, compact on mobile */}
+        <div className="flex items-center gap-1 px-2 py-0.5 bg-muted rounded-md shrink-0">
+          <span className="text-[10px] font-mono text-muted-foreground">Room:</span>
+          <span className="text-xs font-mono font-medium" data-testid="text-room-id">{roomId}</span>
         </div>
 
-        {/* Room controls: Create new room or Join existing */}
-        <div className="flex items-center gap-1.5">
+        {/* Room controls: Create new room or Join existing - icon-only on mobile */}
+        <div className="flex items-center gap-1 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -178,31 +181,28 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Performance metrics placed near connection status for quick visibility */}
+      {/* Right section: Metrics + Actions - always visible, compact on mobile */}
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap shrink-0">
+        {/* Performance metrics - compact display */}
         <PerformanceMetrics socket={socket} isConnected={isConnected} />
         <ConnectionStatus isConnected={isConnected} />
         
+        {/* Share button - icon-only on mobile */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="sm"
               variant="outline"
               onClick={handleCopyLink}
-              className="gap-1 sm:gap-2 h-7 sm:h-8 px-2 sm:px-3"
+              className="h-7 px-2 gap-1"
               data-testid="button-share-room"
             >
               {copied ? (
-                <>
-                  <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                  <span className="hidden sm:inline">Copied!</span>
-                </>
+                <Check className="h-3.5 w-3.5 text-green-500" />
               ) : (
-                <>
-                  <Share2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </>
+                <Share2 className="h-3.5 w-3.5" />
               )}
+              <span className="hidden sm:inline text-xs">{copied ? "Copied!" : "Share"}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -210,18 +210,18 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
           </TooltipContent>
         </Tooltip>
 
-        {/* Exit Room button - cleanly leaves room and returns to landing page */}
+        {/* Exit Room button - icon-only on mobile */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="sm"
               variant="ghost"
               onClick={handleExitRoom}
-              className="gap-1 sm:gap-2 h-7 sm:h-8 px-2 sm:px-3 text-muted-foreground hover:text-foreground"
+              className="h-7 px-2 gap-1 text-muted-foreground hover:text-foreground"
               data-testid="button-exit-room"
             >
-              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Exit</span>
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Exit</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
