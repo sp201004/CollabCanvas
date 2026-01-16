@@ -1,0 +1,154 @@
+You are acting as a senior technical reviewer evaluating my project:
+
+PROJECT TITLE:
+"CollabCanvas – Real-Time Collaborative Drawing Canvas"
+
+YOUR TASK:
+Perform a strict compliance review of the current codebase, UI, and documentation
+against the assignment requirements provided below.
+
+DO NOT:
+- Rewrite the app
+- Refactor architecture
+- Add new features unless explicitly missing
+- Add new libraries
+
+ONLY:
+- Verify
+- Audit
+- Report gaps
+- Suggest minimal fixes (if needed)
+
+==============================
+1️⃣ CORE FUNCTIONALITY CHECK
+==============================
+
+Verify the following are implemented and working:
+
+- Multi-user real-time drawing on the same canvas
+- WebSocket-based synchronization (Socket.io or native WS)
+- Drawing visible WHILE another user is drawing (not after mouse up)
+- Brush + Eraser tools using raw Canvas API
+- Color selection works correctly
+- Stroke width changes affect drawing immediately
+- User presence list (online users)
+- Unique color assigned per user
+- Cursor / pointer indicators for other users
+- Undo / Redo works globally across users
+- Conflict handling when users draw simultaneously
+
+Mark each item as:
+✔ Implemented
+⚠ Partially implemented
+❌ Missing
+
+==============================
+2️⃣ TECHNICAL QUALITY REVIEW
+==============================
+
+Check and report on:
+
+- Canvas performance (no full redraw on every frame)
+- Path optimization / batching of draw events
+- Handling of high-frequency pointer/mouse events
+- Proper serialization of draw events
+- Network latency tolerance
+- Client-side prediction (if any)
+- State consistency across reconnects
+
+==============================
+3️⃣ BONUS FEATURES VERIFICATION
+==============================
+
+Verify status of:
+
+- Mobile touch support (Pointer Events / Touch Events)
+- Room system (isolated canvases per room)
+- Drawing persistence (save/load behavior)
+- Performance metrics (FPS counter, latency display)
+- Creative tools (shapes, text, images)
+
+Clearly state:
+✔ Implemented
+⚠ Limited / Partial
+❌ Not implemented
+(Optional features should NOT be penalized heavily)
+
+==============================
+4️⃣ UI / UX REVIEW
+==============================
+
+Check UI quality:
+
+- Toolbar layout consistency
+- Color picker usability
+- Size slider + input alignment
+- Responsive behavior (desktop + mobile)
+- FPS / latency indicator placement (top header)
+- Room code visibility and sharing UX
+- First landing page flow:
+  - Name input
+  - Create room
+  - Join existing room (with validation)
+
+==============================
+5️⃣ ROOM & JOIN LOGIC VALIDATION
+==============================
+
+Verify:
+
+- Room codes are validated (length, format)
+- Invalid room codes cannot auto-create rooms
+- Join vs Create flow is clearly separated
+- Room code input has max length and character constraints
+- Room IDs are predictable or well-documented
+- Sharing room code works correctly
+
+==============================
+6️⃣ DOCUMENTATION CHECK
+==============================
+
+Verify README.md includes:
+
+- Correct project title
+- Setup instructions (npm install && npm start)
+- Multi-user testing steps
+- Known limitations
+- Time spent
+- Architecture summary
+
+Verify ARCHITECTURE.md includes:
+
+- Data flow explanation
+- WebSocket message formats
+- Undo/Redo strategy
+- Conflict resolution strategy
+- Performance decisions
+
+==============================
+7️⃣ CODE QUALITY & INTERVIEW READINESS
+==============================
+
+Evaluate:
+
+- No copy-paste boilerplate
+- Meaningful variable/function names
+- Comments explain WHY, not just WHAT
+- Error handling exists (null checks, socket errors)
+- Code explainable line-by-line in interview
+- Git history quality (if visible)
+
+==============================
+8️⃣ FINAL OUTPUT FORMAT
+==============================
+
+Return results in this format:
+
+- Compliance score (out of 100)
+- Section-wise checklist table
+- Key strengths (bullet points)
+- Critical gaps (if any)
+- Optional improvement suggestions (clearly marked OPTIONAL)
+
+Be strict, professional, and unbiased.
+Act like a real interviewer reviewing a take-home assignment.
