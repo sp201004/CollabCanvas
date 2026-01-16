@@ -270,25 +270,18 @@ export function DrawingCanvas({
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, pan.x * dpr, pan.y * dpr);
 
-    // Merge strokes and shapes into a single chronologically-ordered array
-    // This allows eraser strokes (destination-out) to erase pixels from shapes drawn before them
-    type DrawOperation = { type: 'stroke'; data: Stroke } | { type: 'shape'; data: Shape };
-    const operations: DrawOperation[] = [
-      ...strokes.map(s => ({ type: 'stroke' as const, data: s })),
-      ...shapes.map(s => ({ type: 'shape' as const, data: s })),
-    ];
+    // Draw strokes first (sorted by timestamp)
+    // Eraser strokes use destination-out and ONLY affect other brush strokes
+    const sortedStrokes = [...strokes].sort((a, b) => a.timestamp - b.timestamp);
+    sortedStrokes.forEach(stroke => drawStroke(ctx, stroke));
     
-    // Sort by timestamp for chronological rendering
-    operations.sort((a, b) => a.data.timestamp - b.data.timestamp);
+    // Reset composite operation before drawing shapes
+    ctx.globalCompositeOperation = "source-over";
     
-    // Draw all operations in order
-    operations.forEach((op) => {
-      if (op.type === 'stroke') {
-        drawStroke(ctx, op.data);
-      } else {
-        drawShape(ctx, op.data);
-      }
-    });
+    // Draw shapes on top (sorted by timestamp)
+    // Shapes are never affected by eraser - they can only be deleted via Select tool
+    const sortedShapes = [...shapes].sort((a, b) => a.timestamp - b.timestamp);
+    sortedShapes.forEach(shape => drawShape(ctx, shape));
 
     // Draw preview shape if dragging
     if (previewShape) {

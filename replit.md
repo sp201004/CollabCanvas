@@ -54,12 +54,13 @@ CollabCanvas is a multi-user drawing application where multiple people can draw 
 12. **ToolSettingsBar**: Photoshop-style context-aware top bar showing tool-specific settings
 
 ## Eraser Implementation
-The eraser uses pixel-based erasing (like MS Paint/Photoshop):
+The eraser only works on freehand brush strokes (NOT shapes or text):
 - Uses `globalCompositeOperation = "destination-out"` for Canvas API pixel clearing
-- Strokes and shapes are rendered in chronological order by timestamp
-- Eraser strokes affect pixels from any object drawn before them
-- Shapes/text are NOT deleted as objects - only pixels are cleared
-- Undo removes the eraser stroke, triggering a full canvas redraw that restores pixels
+- Strokes are rendered first, then shapes are rendered on top
+- Eraser strokes ONLY affect other brush strokes drawn before them
+- Shapes and text are NEVER affected by the eraser
+- To delete shapes/text, use the Move/Select tool (V) → select shape → Delete button
+- Undo removes the eraser stroke, triggering a full canvas redraw that restores strokes
 
 ## WebSocket Events
 - `room:join` / `room:leave` - User room management

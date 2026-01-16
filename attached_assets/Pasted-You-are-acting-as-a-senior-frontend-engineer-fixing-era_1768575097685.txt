@@ -1,0 +1,62 @@
+You are acting as a senior frontend engineer fixing eraser behavior in CollabCanvas.
+
+CONTEXT:
+The app supports freehand strokes (pixel-based) and shapes/text (object-based).
+Currently, the eraser visually removes parts of shapes/text by painting white pixels,
+but the underlying objects still exist and reappear when moved.
+This is incorrect and misleading behavior.
+
+GOAL:
+Fix eraser behavior to be logically correct, predictable, and interview-safe.
+
+━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+- DO NOT paint white to simulate erasing
+- DO NOT add masking, rasterization, or complex geometry logic
+- DO NOT refactor canvas or socket architecture
+- DO NOT add new libraries
+- Keep undo/redo working as-is
+- Keep shapes and text object-based
+- Keep strokes pixel-based
+
+━━━━━━━━━━━━━━━━━━━━━━
+EXPECTED CORRECT BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. Eraser works ONLY on freehand brush strokes
+2. Eraser MUST NOT affect:
+   - Shapes (rectangle, circle, line)
+   - Text objects
+3. Shapes and text can ONLY be removed via:
+   - Select tool → Delete action
+4. When a shape or text is selected:
+   - Eraser must be disabled or ignored
+   - No visual erase illusion should occur
+
+━━━━━━━━━━━━━━━━━━━━━━
+TASKS (WORK AUTONOMOUSLY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. Identify where eraser logic currently applies to all drawables
+2. Remove any logic that:
+   - Paints white pixels
+   - Uses eraser on shapes or text
+3. Restrict eraser logic to stroke-type entities only
+4. Ensure move/select always reflects true object state
+5. Ensure no hidden or “fake erased” pixels remain
+6. Add minimal guard conditions (no UX redesign)
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL CHECKLIST (MUST PASS)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✔ Eraser cleanly erases brush strokes only  
+✔ Shapes/text never partially erase  
+✔ No white overlay hacks exist  
+✔ Moving objects never reveals erased areas  
+✔ Logic is simple and explainable in interviews  
+
+Act like a senior engineer making the final pre-interview fix.
+Proceed immediately without asking questions.
