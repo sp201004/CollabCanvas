@@ -1,4 +1,4 @@
-import { Share2, Copy, Check, Plus, LogIn } from "lucide-react";
+import { Share2, Copy, Check, Plus, LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +67,19 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
 
   // Check if current input is a valid room code (for enabling/disabling button)
   const isJoinCodeValid = isValidRoomCode(joinRoomId.trim().toUpperCase());
+
+  // Exit room: disconnect from socket, clear session, redirect to landing
+  // This cleanly removes user from room without destroying room state
+  const handleExitRoom = () => {
+    // Emit leave event before navigating (socket cleanup)
+    if (socket && socket.connected) {
+      socket.emit("room:leave", roomId);
+    }
+    // Clear stored username so user can re-enter with new name if desired
+    sessionStorage.removeItem("canvas_username");
+    // Redirect to landing page
+    window.location.href = "/";
+  };
 
   return (
     <header className="flex items-center justify-between h-12 sm:h-14 md:h-16 px-2 sm:px-4 md:px-6 bg-card border-b border-card-border" data-testid="room-header">
@@ -194,6 +207,25 @@ export function RoomHeader({ roomId, isConnected, socket, onRoomChange }: RoomHe
           </TooltipTrigger>
           <TooltipContent>
             <p>Copy room link to invite others</p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Exit Room button - cleanly leaves room and returns to landing page */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleExitRoom}
+              className="gap-1 sm:gap-2 h-7 sm:h-8 px-2 sm:px-3 text-muted-foreground hover:text-foreground"
+              data-testid="button-exit-room"
+            >
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Exit</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Leave this room</p>
           </TooltipContent>
         </Tooltip>
       </div>
