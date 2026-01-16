@@ -1,0 +1,109 @@
+You are reviewing an existing project for assignment compliance.
+
+PROJECT TITLE (EXPECTED):
+"CollabCanvas – Real-Time Collaborative Drawing Canvas"
+
+STRICT REVIEW RULES:
+- DO NOT modify code
+- DO NOT add features
+- DO NOT refactor
+- DO NOT fix bugs
+- ONLY analyze and report gaps
+- Be brutally honest and precise
+
+YOUR TASK:
+Audit the entire application and documentation against the provided assignment requirements and report:
+
+1️⃣ MISSING FEATURES
+2️⃣ PARTIALLY IMPLEMENTED FEATURES
+3️⃣ INCORRECT / WEAK IMPLEMENTATIONS
+4️⃣ UI / UX DEVIATIONS
+5️⃣ DOCUMENTATION GAPS
+6️⃣ EDGE CASE FAILURES
+
+---
+
+## 📋 CHECK AGAINST THESE SECTIONS
+
+### A. CORE FUNCTIONALITY
+- Real-time drawing sync (live strokes, not end-only)
+- Brush, eraser, color, stroke width
+- Cursor presence for other users
+- Global undo/redo correctness
+- Conflict handling (overlapping strokes)
+- User list + color assignment
+
+### B. REAL-TIME ARCHITECTURE
+- WebSocket message structure clarity
+- Event batching vs per-point events
+- Network latency handling
+- Client-side prediction (if any)
+- Room isolation correctness
+
+### C. ROOM & ENTRY FLOW
+- Landing page exists or not
+- Name input validation
+- Join room code validation (length, charset)
+- Invalid room code handling
+- Ability to create multiple rooms
+- Ability to EXIT a room cleanly
+
+### D. UI / RESPONSIVENESS
+- Mobile usability (portrait + landscape)
+- Toolbar usability on small screens
+- Header visibility on resize
+- Overflow / clipping issues
+- Alignment problems (SIZE, COLOR, tools)
+- Accessibility issues
+
+### E. BONUS FEATURES (MARK STATUS CLEARLY)
+For each, mark one:
+✔ Implemented
+⚠ Partial
+✖ Missing
+
+- Mobile touch support
+- Drawing persistence
+- Performance metrics (FPS, latency)
+- Shapes / text / images
+- Room system robustness
+
+### F. DOCUMENTATION
+Check README.md and ARCHITECTURE.md for:
+- Accurate setup steps
+- Data flow diagram presence
+- WebSocket protocol explanation
+- Undo/redo strategy explanation
+- Performance decisions explained
+- Known limitations listed honestly
+
+### G. CODE QUALITY
+- Any copy-paste patterns?
+- Comments explain WHY vs WHAT?
+- Error handling depth
+- Edge-case safety
+- Interview readiness
+
+---
+
+## 📤 OUTPUT FORMAT (MANDATORY)
+
+1️⃣ **Summary Score** (out of 100)
+
+2️⃣ **Missing Features**
+- Bullet list (clear, concise)
+
+3️⃣ **Partially Implemented**
+- What exists
+- What is missing
+
+4️⃣ **Critical UX / Logic Issues**
+- User-facing impact
+
+5️⃣ **Risk Areas for Interview**
+- What interviewer may question
+
+6️⃣ **Quick Win Improvements** (no code, just suggestions)
+
+DO NOT sugarcoat.
+Act like a senior reviewer evaluating a take-home assignment.
