@@ -1,0 +1,137 @@
+You are acting as a senior frontend engineer designing a professional,
+Photoshop-like toolbar system for CollabCanvas.
+
+GOAL:
+Implement a context-aware TOP TOOL SETTINGS BAR like Adobe Photoshop,
+and add a new Move/Select tool for shapes & text.
+
+━━━━━━━━━━━━━━━━━━━━━━
+PART 1: PHOTOSHOP-STYLE TOOL SETTINGS BAR
+━━━━━━━━━━━━━━━━━━━━━━
+
+PROBLEM:
+Currently, all tool controls are inside the left toolbar.
+This is NOT professional UX.
+
+EXPECTED BEHAVIOR (MATCH PHOTOSHOP):
+
+- When a tool is selected from the left toolbar,
+  its settings must appear in a horizontal bar at the TOP.
+- The top bar content MUST change dynamically per selected tool.
+- Only settings relevant to the active tool should be visible.
+
+━━━━━━━━━━━━━━━━━━━━━━
+TOOL → TOP BAR MAPPING
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. BRUSH TOOL
+Top bar must show:
+- Stroke size slider
+- Size number input
+- Brush preview dot
+- Opacity (if exists)
+
+2. ERASER TOOL
+Top bar must show:
+- Eraser size slider
+- Size number input
+- Soft/Hard toggle (if exists)
+
+3. SHAPE TOOLS (Rect / Circle / Line)
+Top bar must show:
+- Stroke width
+- Fill color
+- Stroke color
+- Line style (solid / dashed if exists)
+
+4. TEXT TOOL
+Top bar must show:
+- Font size
+- Font weight
+- Text color
+- Alignment (left / center / right)
+
+5. ZOOM TOOL
+Top bar must show:
+- Zoom level %
+- + button
+- − button
+- Reset / Fit Screen
+
+6. MOVE / SELECT TOOL (NEW)
+Top bar must show:
+- Align left / center / right
+- Bring forward / send backward
+- Delete selected item
+
+━━━━━━━━━━━━━━━━━━━━━━
+PART 2: NEW MOVE / SELECT TOOL (CRITICAL)
+━━━━━━━━━━━━━━━━━━━━━━
+
+ADD A NEW TOOL:
+- Place it BEFORE brush tool (like Photoshop)
+- Icon: Arrow / cursor
+
+EXPECTED BEHAVIOR:
+- User can click to select a shape or text
+- Selected item shows visual outline (bounding box)
+- Drag to move selected shape/text
+- DOES NOT draw on canvas
+- Works with undo/redo
+- Syncs via existing socket events
+
+STRICT RULES:
+- DO NOT add new libraries
+- DO NOT refactor canvas rendering
+- Use existing shapes/text data
+- Minimal additions only
+
+━━━━━━━━━━━━━━━━━━━━━━
+PART 3: LAYOUT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+- Left toolbar stays icon-only
+- Top bar is fixed below header
+- Top bar uses flexbox
+- Height consistent across tools
+- No overflow
+- Responsive (wrap on small screens)
+
+━━━━━━━━━━━━━━━━━━━━━━
+PART 4: HOW TO IMPLEMENT (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. First create TODO list covering:
+   - Top bar container
+   - Tool-to-settings mapping
+   - Move tool logic
+   - Selection state
+   - Visual selection outline
+
+2. Then automatically:
+   - Implement top bar
+   - Add move tool
+   - Wire tool selection → top bar update
+   - Ensure undo/redo compatibility
+
+DO NOT:
+- Explain theory
+- Pause for confirmation
+- Touch WebSocket logic
+- Change existing tool behavior
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━
+
+✔ Tool settings appear ONLY in top bar  
+✔ Top bar changes when tool changes  
+✔ Move tool can select & move shapes/text  
+✔ Brush still draws normally  
+✔ Eraser still erases (including shapes/text)  
+✔ UI feels Photoshop-like and interview-ready  
+
+Act like a senior UI engineer polishing a professional canvas app
+before final interview submission.
+
+Proceed immediately.

@@ -29,8 +29,17 @@ export const userSchema = z.object({
 
 export type User = z.infer<typeof userSchema>;
 
-export const drawingToolSchema = z.enum(["brush", "eraser", "rectangle", "circle", "line", "text"]);
+export const drawingToolSchema = z.enum(["select", "brush", "eraser", "rectangle", "circle", "line", "text"]);
 export type DrawingTool = z.infer<typeof drawingToolSchema>;
+
+// Text style for text shapes
+export const textStyleSchema = z.object({
+  fontSize: z.number().optional(),
+  fontWeight: z.enum(["normal", "bold"]).optional(),
+  align: z.enum(["left", "center", "right"]).optional(),
+});
+
+export type TextStyle = z.infer<typeof textStyleSchema>;
 
 // Shape types for rectangle, circle, line, text tools
 export const shapeSchema = z.object({
@@ -43,6 +52,8 @@ export const shapeSchema = z.object({
   userId: z.string(),
   timestamp: z.number(),
   text: z.string().optional(),
+  fillColor: z.string().optional(),
+  textStyle: textStyleSchema.optional(),
 });
 
 export type Shape = z.infer<typeof shapeSchema>;
@@ -53,10 +64,11 @@ export const roomSchema = z.object({
   users: z.array(userSchema),
   strokes: z.array(strokeSchema),
   operationHistory: z.array(z.object({
-    type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
+    type: z.enum(["draw", "erase", "undo", "redo", "clear", "move"]),
     strokeId: z.string().optional(),
     stroke: strokeSchema.optional(),
     shape: shapeSchema.optional(),
+    oldShape: shapeSchema.optional(),
     userId: z.string(),
     timestamp: z.number(),
   })),
@@ -88,10 +100,11 @@ export const strokePointSchema = z.object({
 export type StrokePoint = z.infer<typeof strokePointSchema>;
 
 export const operationSchema = z.object({
-  type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
+  type: z.enum(["draw", "erase", "undo", "redo", "clear", "move"]),
   strokeId: z.string().optional(),
   stroke: strokeSchema.optional(),
   shape: shapeSchema.optional(),
+  oldShape: shapeSchema.optional(),
   userId: z.string(),
   timestamp: z.number(),
 });
