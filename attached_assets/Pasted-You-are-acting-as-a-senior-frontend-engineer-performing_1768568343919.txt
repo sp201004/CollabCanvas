@@ -1,0 +1,75 @@
+You are acting as a senior frontend engineer performing a FINAL strict audit on the CollabCanvas project.
+
+GOAL:
+Perform a complete end-to-end verification of the application.
+Identify ANY remaining UI, UX, logic, or compliance issues.
+If issues exist, fix them autonomously.
+If no issues exist, clearly confirm the project is INTERVIEW READY.
+
+━━━━━━━━━━━━━━━━━━━━━━
+SCOPE OF CHECK (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. TOOLBAR UI & UX
+- Verify toolbar alignment, spacing, and stability
+- Ensure no overflow, overlap, or broken layout
+- Confirm size control (slider + number input) is fully visible & usable
+- Confirm toolbar responsiveness on small screens
+- Ensure sections follow correct order:
+  DRAW → SHAPES → UNDO/REDO → CLEAR → COLOR → SIZE → VIEW → FILE
+- Toolbar must be Canva-like, vertical, clean, and professional
+
+2. FEATURE COMPLIANCE
+- Real-time drawing during pointer move
+- Multi-user rooms with isolation
+- Brush, eraser, shapes, text
+- Global undo/redo for strokes AND shapes
+- Cursor sync respects zoom & pan
+- Mobile drawing works via Pointer Events
+- Performance optimizations intact (rAF, batching, debounce)
+
+3. FORBIDDEN FEATURES (MUST NOT EXIST)
+Confirm complete removal of:
+- LocalStorage auto-save
+- Session persistence
+- JSON export
+- JSON import
+- Any UI, logic, or docs referencing the above
+
+4. CODE QUALITY & SAFETY
+- No dead code
+- No unused UI
+- Proper socket cleanup
+- Proper animation/timer cleanup
+- No console.logs or commented hacks
+- TypeScript types correct
+- Naming consistency checked
+
+5. DOCUMENTATION
+- README complete & accurate
+- ARCHITECTURE.md aligned with actual implementation
+- Known limitations correctly documented
+- No claims of removed features
+
+━━━━━━━━━━━━━━━━━━━━━━
+HOW TO WORK (STRICT)
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. First create a TODO list of any remaining issues (if any)
+2. Fix issues one-by-one automatically
+3. Do NOT ask questions
+4. Do NOT refactor unrelated logic
+5. Do NOT add new libraries
+6. If NO issues exist, say so clearly
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL OUTPUT REQUIRED
+━━━━━━━━━━━━━━━━━━━━━━
+
+Return ONLY:
+- Final compliance verdict (PASS / FAIL)
+- Compliance score (out of 100)
+- Short list of remaining risks (if any)
+- Clear statement: “INTERVIEW READY” or “NOT READY”
+
+Be strict. Assume this is the last review before submission.
