@@ -49,7 +49,6 @@ CollabCanvas is a multi-user drawing application where multiple people can draw 
 7. **Drawing Tools**: Brush, eraser, color picker, stroke width
 8. **Room System**: Shareable 6-character room codes
 9. **Undo/Redo**: Global operation history across all users
-10. **Persistence**: LocalStorage auto-save + JSON export/import
 
 ## WebSocket Events
 - `room:join` / `room:leave` - User room management

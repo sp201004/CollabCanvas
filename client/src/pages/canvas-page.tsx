@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Users, Download, Upload, ZoomIn, ZoomOut, Move } from "lucide-react";
+import { Users, ZoomIn, ZoomOut, Move } from "lucide-react";
 import { DrawingCanvas } from "@/components/drawing-canvas";
 import { ToolPanel } from "@/components/tool-panel";
 import { ColorPicker } from "@/components/color-picker";
@@ -26,46 +26,6 @@ function isValidRoomCode(code: string): boolean {
 
 function getStoredUsername(): string | null {
   return sessionStorage.getItem("canvas_username");
-}
-
-// LocalStorage key for canvas persistence
-function getCanvasStorageKey(roomId: string): string {
-  return `collabcanvas_${roomId}`;
-}
-
-// Save canvas state to localStorage
-function saveCanvasToStorage(roomId: string, strokes: Stroke[], shapes: Shape[]): void {
-  try {
-    const data = JSON.stringify({ strokes, shapes, savedAt: Date.now() });
-    localStorage.setItem(getCanvasStorageKey(roomId), data);
-  } catch (e) {
-    console.warn("Failed to save canvas to localStorage:", e);
-  }
-}
-
-// Load canvas state from localStorage
-function loadCanvasFromStorage(roomId: string): { strokes: Stroke[]; shapes: Shape[] } | null {
-  try {
-    const data = localStorage.getItem(getCanvasStorageKey(roomId));
-    if (data) {
-      return JSON.parse(data);
-    }
-  } catch (e) {
-    console.warn("Failed to load canvas from localStorage:", e);
-  }
-  return null;
-}
-
-// Export canvas as JSON
-function exportCanvasAsJSON(strokes: Stroke[], shapes: Shape[]): void {
-  const data = JSON.stringify({ strokes, shapes, exportedAt: Date.now() }, null, 2);
-  const blob = new Blob([data], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `collabcanvas-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 const emptySocketReturn = {
@@ -105,7 +65,6 @@ export default function CanvasPage() {
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isRoomValid = isValidRoomCode(roomId);
 
@@ -137,19 +96,6 @@ export default function CanvasPage() {
     updateLocalStroke,
     addLocalShape,
   } = username ? socketData : emptySocketReturn;
-
-  // Auto-save canvas state to localStorage every 5 seconds
-  useEffect(() => {
-    if (!isRoomValid || !username) return;
-    
-    const interval = setInterval(() => {
-      if (strokes.length > 0 || shapes.length > 0) {
-        saveCanvasToStorage(roomId, strokes, shapes);
-      }
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [roomId, strokes, shapes, isRoomValid, username]);
 
   // Redirect if invalid room
   useEffect(() => {
@@ -248,42 +194,6 @@ export default function CanvasPage() {
     [sendCursorMove]
   );
 
-  const handleExport = useCallback(() => {
-    exportCanvasAsJSON(strokes, shapes);
-  }, [strokes, shapes]);
-
-  const handleImport = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.strokes && Array.isArray(data.strokes)) {
-          data.strokes.forEach((stroke: Stroke) => {
-            addLocalStroke(stroke);
-            startStroke(stroke);
-          });
-        }
-        if (data.shapes && Array.isArray(data.shapes)) {
-          data.shapes.forEach((shape: Shape) => {
-            addLocalShape(shape);
-            addShape(shape);
-          });
-        }
-      } catch (err) {
-        console.error("Failed to import canvas:", err);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  }, [addLocalStroke, startStroke, addLocalShape, addShape]);
-
   const handleZoomIn = useCallback(() => {
     setZoom(z => Math.min(5, z * 1.2));
   }, []);
@@ -356,37 +266,6 @@ export default function CanvasPage() {
               </TooltipTrigger>
               <TooltipContent side="right"><p>Reset View</p></TooltipContent>
             </Tooltip>
-          </div>
-          
-          {/* Export/Import */}
-          <div className="flex flex-col gap-2 p-2.5 bg-card border border-card-border rounded-lg">
-            <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">File</span>
-            <div className="flex justify-center gap-1.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={handleExport} className="h-8 w-8" data-testid="button-export">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right"><p>Export JSON</p></TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={handleImport} className="h-8 w-8" data-testid="button-import">
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right"><p>Import JSON</p></TooltipContent>
-              </Tooltip>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleFileChange}
-              className="hidden"
-              data-testid="input-import-file"
-            />
           </div>
         </aside>
 

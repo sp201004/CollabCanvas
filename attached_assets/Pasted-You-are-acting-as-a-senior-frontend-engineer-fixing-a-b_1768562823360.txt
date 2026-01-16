@@ -1,0 +1,108 @@
+You are acting as a senior frontend engineer fixing a broken toolbar UI in CollabCanvas.
+
+GOAL:
+Fully fix toolbar alignment, spacing, and usability.
+Remove unwanted persistence features completely.
+Work autonomously: create TODOs, then fix them one-by-one without stopping.
+
+━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL PROBLEMS (MUST FIX)
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. TOOLBAR LAYOUT IS BROKEN
+- Icons are misaligned
+- Sections overlap or look uneven
+- Spacing between groups is inconsistent
+- Brush/pen size control is visually broken (only label visible)
+- VIEW / FILE / RESET sections are not aligned properly
+- Toolbar looks unstable when scrolling or resizing
+
+2. SIZE CONTROL IS BROKEN
+- Slider + number input not visible properly
+- Size label visible but control missing
+- Layout overflow inside toolbar cards
+
+3. RESPONSIVENESS IS BROKEN
+- Toolbar does not adapt cleanly on smaller screens
+- Items get cut or squeezed incorrectly
+
+4. UNWANTED FEATURES (REMOVE COMPLETELY)
+REMOVE ALL of the following:
+- LocalStorage auto-save
+- Session persistence
+- JSON export
+- JSON import
+- Any UI buttons or code paths related to these
+
+These features must be fully removed from:
+- UI
+- Logic
+- State
+- Documentation references
+
+━━━━━━━━━━━━━━━━━━━━━━
+EXPECTED TOOLBAR STRUCTURE (REFERENCE)
+━━━━━━━━━━━━━━━━━━━━━━
+
+Follow a Canva-like vertical toolbar structure:
+
+- Each section in its own rounded card
+- Sections stacked vertically with consistent gap
+- Center-aligned icons
+- Fixed width toolbar
+- No element should overflow its container
+
+Sections order:
+1. DRAW (brush, eraser)
+2. SHAPES (rect, circle, line, text)
+3. UNDO / REDO
+4. CLEAR
+5. COLOR
+6. SIZE (dot preview + slider + number input)
+7. VIEW (zoom in, zoom out, reset)
+8. FILE (only relevant actions that remain)
+
+━━━━━━━━━━━━━━━━━━━━━━
+STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+- DO NOT rewrite the app
+- DO NOT refactor canvas or socket logic
+- DO NOT add new libraries
+- DO NOT add persistence back in any form
+- ONLY fix layout, alignment, and remove features
+- Use CSS (flexbox/grid) as primary fix
+- Minimal HTML changes only if required
+- No visual redesign, just clean alignment
+
+━━━━━━━━━━━━━━━━━━━━━━
+HOW TO WORK (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. First, create a TODO list identifying:
+   - Each broken toolbar section
+   - Each alignment issue
+   - Each unwanted persistence feature
+
+2. Then automatically:
+   - Fix TODO #1 completely
+   - Move to TODO #2
+   - Continue until all TODOs are resolved
+
+3. Do NOT pause or ask questions
+4. Do NOT explain excessively
+5. Add short comments only where layout fixes are non-obvious
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL CHECKLIST (MUST PASS)
+━━━━━━━━━━━━━━━━━━━━━━
+
+✔ Toolbar looks clean, stable, and aligned  
+✔ Brush size control fully visible and usable  
+✔ No overlapping or overflow anywhere  
+✔ Responsive behavior works on smaller screens  
+✔ No LocalStorage / JSON export/import exists anywhere  
+✔ UI feels interview-ready and professional  
+
+Act like a senior engineer cleaning up a broken UI before final submission.
+Proceed immediately.

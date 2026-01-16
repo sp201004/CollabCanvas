@@ -249,38 +249,6 @@ const sendCursorMove = (position, isDrawing) => {
 - Maintains smooth cursor appearance (still ~28 updates/second)
 - Final cursor position always sent (no "stuck" cursors)
 
-## Persistence Strategy
-
-### LocalStorage Auto-Save
-
-```typescript
-// Save every 5 seconds
-useEffect(() => {
-  const interval = setInterval(() => {
-    if (strokes.length > 0 || shapes.length > 0) {
-      localStorage.setItem(
-        `collabcanvas_${roomId}`,
-        JSON.stringify({ strokes, shapes, savedAt: Date.now() })
-      );
-    }
-  }, 5000);
-  return () => clearInterval(interval);
-}, [roomId, strokes, shapes]);
-```
-
-### JSON Export/Import
-
-Export format:
-```json
-{
-  "strokes": [...],
-  "shapes": [...],
-  "exportedAt": 1234567890
-}
-```
-
-Import triggers `stroke:start` and `shape:add` events for each element, syncing imported content to all users.
-
 ## Performance Optimizations
 
 ### 1. Point Batching
@@ -361,7 +329,6 @@ const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
 
 1. **Layer system** - Multiple drawing layers
 2. **Selection tool** - Select and move shapes
-3. **Server persistence** - Redis/database storage
+3. **Server persistence** - Redis/database storage for longer-term canvas retention
 4. **Image import** - Add images to canvas
-5. **Export as PNG** - Canvas to image export
-6. **Authentication** - Optional room passwords
+5. **Authentication** - Optional room passwords

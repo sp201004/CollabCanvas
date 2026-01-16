@@ -25,11 +25,6 @@ A multi-user drawing application where multiple people can draw simultaneously o
 - **Zoom Controls** - Button controls + keyboard shortcuts (+/-/0)
 - **Reset View** - Quickly return to default view
 
-### Persistence & Export
-- **Auto-save** - Canvas state saved to localStorage every 5 seconds
-- **Export JSON** - Download canvas as JSON file
-- **Import JSON** - Load previously saved canvas files
-
 ### Room System
 - **6-Character Room Codes** - Shareable alphanumeric codes (e.g., `ABC123`)
 - **Strict Validation** - Invalid codes prevented from creating rooms
@@ -123,21 +118,15 @@ The app runs on **http://localhost:5000**
 - Server is the source of truth for operation order
 - Any user can undo any operation (collaborative by design)
 
-### Persistence
-- localStorage auto-save every 5 seconds per room
-- JSON export/import for backup and sharing
-- Shapes and strokes preserved separately
-
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed technical documentation.
 
 ## Time Spent
 
-Approximately **15-18 hours** of development time, including:
+Approximately **14-16 hours** of development time, including:
 - Core architecture and real-time sync: ~4 hours
 - Drawing tools and Canvas API implementation: ~4 hours
 - Shape tools (rectangle, circle, line, text): ~2 hours
 - Pan & Zoom implementation: ~1.5 hours
-- Persistence (localStorage + export/import): ~1 hour
 - Room system and user presence: ~2 hours
 - UI/UX polish and responsive design: ~2 hours
 - Testing and bug fixes: ~1.5 hours
