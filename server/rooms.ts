@@ -1,10 +1,11 @@
-import type { Stroke, User, Operation } from "@shared/schema";
+import type { Stroke, User, Operation, Shape } from "@shared/schema";
 import { USER_COLORS } from "@shared/schema";
 
 export interface Room {
   id: string;
   users: Map<string, User>;
   strokes: Map<string, Stroke>;
+  shapes: Map<string, Shape>;
   operationHistory: Operation[];
   undoneOperations: Operation[];
   userColorIndex: number;
@@ -20,6 +21,7 @@ class RoomManager {
         id: roomId,
         users: new Map(),
         strokes: new Map(),
+        shapes: new Map(),
         operationHistory: [],
         undoneOperations: [],
         userColorIndex: 0,
@@ -27,6 +29,35 @@ class RoomManager {
       this.rooms.set(roomId, room);
     }
     return room;
+  }
+
+  // Add a shape to the room
+  addShape(roomId: string, shape: Shape): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+    
+    room.shapes.set(shape.id, shape);
+    
+    room.operationHistory.push({
+      type: "draw",
+      strokeId: shape.id,
+      userId: shape.userId,
+      timestamp: Date.now(),
+    });
+    
+    room.undoneOperations = [];
+  }
+
+  getShapes(roomId: string): Shape[] {
+    const room = this.rooms.get(roomId);
+    if (!room) return [];
+    return Array.from(room.shapes.values());
+  }
+
+  deleteShape(roomId: string, shapeId: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+    room.shapes.delete(shapeId);
   }
 
   getRoom(roomId: string): Room | undefined {
@@ -143,6 +174,7 @@ class RoomManager {
     if (!room) return;
     
     room.strokes.clear();
+    room.shapes.clear();
     room.operationHistory = [];
     room.undoneOperations = [];
   }

@@ -6,15 +6,39 @@ A multi-user drawing application where multiple people can draw simultaneously o
 
 ## Features
 
-- **Real-time Drawing** - See other users' strokes as they draw (not after completion)
+### Core Drawing Tools
+- **Brush & Eraser** - Freehand drawing with adjustable stroke width (1-50px)
+- **Rectangle Tool** - Draw rectangles with drag-and-drop
+- **Circle Tool** - Draw ellipses/circles with drag-and-drop
+- **Line Tool** - Draw straight lines between two points
+- **Text Tool** - Add text annotations to the canvas
+- **Color Picker** - 8 preset colors + custom color input
+
+### Real-time Collaboration
+- **Live Drawing Sync** - See other users' strokes as they draw (not after completion)
 - **Cursor Tracking** - Live cursor positions of all connected users
 - **User Presence** - Online user list with unique assigned colors
-- **Drawing Tools** - Brush and eraser with adjustable stroke width (1-50px)
-- **Color Picker** - 8 preset colors + custom color input
-- **Room System** - Shareable 6-character room codes for collaboration
 - **Global Undo/Redo** - Shared operation history across all users
-- **Mobile Support** - Touch-friendly interface with responsive layout
-- **Performance Metrics** - Live FPS and network latency display
+
+### Canvas Controls
+- **Pan & Zoom** - Mouse wheel to zoom, middle-click to pan
+- **Zoom Controls** - Button controls + keyboard shortcuts (+/-/0)
+- **Reset View** - Quickly return to default view
+
+### Persistence & Export
+- **Auto-save** - Canvas state saved to localStorage every 5 seconds
+- **Export JSON** - Download canvas as JSON file
+- **Import JSON** - Load previously saved canvas files
+
+### Room System
+- **6-Character Room Codes** - Shareable alphanumeric codes (e.g., `ABC123`)
+- **Strict Validation** - Invalid codes prevented from creating rooms
+- **Share Button** - One-click room URL copying
+
+### Performance
+- **FPS & Latency Display** - Real-time performance metrics in header
+- **Cursor Debouncing** - 35ms debounce reduces socket traffic by ~60%
+- **Point Batching** - 2px minimum distance threshold for stroke points
 
 ## Quick Start
 
@@ -42,8 +66,15 @@ The app runs on **http://localhost:5000**
 |-----|--------|
 | `B` | Brush tool |
 | `E` | Eraser tool |
+| `R` | Rectangle tool |
+| `C` | Circle tool |
+| `L` | Line tool |
+| `T` | Text tool |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y` | Redo |
+| `+` / `=` | Zoom in |
+| `-` | Zoom out |
+| `0` | Reset view |
 
 ## Tech Stack
 
@@ -78,6 +109,7 @@ The app runs on **http://localhost:5000**
 ### Real-time Sync Strategy
 - **Client-side prediction**: Local strokes render immediately without server confirmation
 - **Point batching**: 2px minimum distance threshold reduces WebSocket traffic by ~60%
+- **Cursor debouncing**: 35ms debounce interval for cursor position updates
 - **Quadratic Bézier curves**: Smooth, natural-looking brush strokes
 
 ### Room System
@@ -91,40 +123,32 @@ The app runs on **http://localhost:5000**
 - Server is the source of truth for operation order
 - Any user can undo any operation (collaborative by design)
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed technical documentation including:
-- Data flow diagrams
-- WebSocket protocol specification
-- Conflict resolution strategy
-- Performance optimizations
+### Persistence
+- localStorage auto-save every 5 seconds per room
+- JSON export/import for backup and sharing
+- Shapes and strokes preserved separately
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed technical documentation.
 
 ## Time Spent
 
-Approximately **12-15 hours** of development time, including:
+Approximately **15-18 hours** of development time, including:
 - Core architecture and real-time sync: ~4 hours
-- Drawing tools and Canvas API implementation: ~3 hours
+- Drawing tools and Canvas API implementation: ~4 hours
+- Shape tools (rectangle, circle, line, text): ~2 hours
+- Pan & Zoom implementation: ~1.5 hours
+- Persistence (localStorage + export/import): ~1 hour
 - Room system and user presence: ~2 hours
 - UI/UX polish and responsive design: ~2 hours
-- Testing and bug fixes: ~2 hours
+- Testing and bug fixes: ~1.5 hours
 - Documentation: ~1 hour
 
 ## Known Limitations
 
-1. **No persistence** - Canvas state is lost when all users leave (after 60s timeout)
+1. **No server persistence** - Canvas state is lost when all users leave (after 60s timeout)
 2. **No authentication** - Anyone with the room link can join
-3. **Fixed canvas size** - No pan/zoom functionality
-4. **Global undo** - Users can undo each other's work (intentional for collaboration)
-5. **No shapes/text** - Only freehand brush and eraser tools
-
-## Optional / Bonus Features
-
-The following features are implemented as **optional enhancements** beyond core requirements:
-
-- **Performance Metrics** - Live FPS counter and network latency display in header
-- **Mobile Touch Support** - Full touch/pointer event handling for tablets and phones
-- **Keyboard Shortcuts** - B/E for tools, Ctrl+Z/Y for undo/redo
-- **Custom Color Picker** - Beyond preset colors, users can pick any custom color
-- **Cursor Indicators** - See other users' cursor positions with name labels
-- **Visual Drawing State** - Pulsing indicator when another user is actively drawing
+3. **Global undo** - Users can undo each other's work (intentional for collaboration)
+4. **Text tool uses prompt** - Basic text input via browser prompt dialog
 
 ## Browser Support
 

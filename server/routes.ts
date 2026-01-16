@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { roomManager } from "./rooms";
-import type { Stroke, Point } from "@shared/schema";
+import type { Stroke, Point, Shape } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -44,7 +44,8 @@ export async function registerRoutes(
       socket.emit("user:list", users);
       
       const strokes = roomManager.getStrokes(roomId);
-      socket.emit("canvas:state", strokes);
+      const shapes = roomManager.getShapes(roomId);
+      socket.emit("canvas:state", { strokes, shapes });
       
       // Send history state so client knows if undo/redo is available
       const historyState = roomManager.getHistoryState(roomId);
@@ -99,6 +100,18 @@ export async function registerRoutes(
       socket.to(currentRoomId).emit("stroke:end", { strokeId: data.strokeId, roomId: currentRoomId });
       
       // Broadcast history state to ALL clients (including sender) so undo/redo buttons update
+      const historyState = roomManager.getHistoryState(currentRoomId);
+      io.to(currentRoomId).emit("history:state", historyState);
+    });
+
+    // Shape events for rectangle, circle, line, text tools
+    socket.on("shape:add", (data: { shape: Shape; roomId: string }) => {
+      if (!currentRoomId || data.roomId !== currentRoomId) return;
+      
+      roomManager.addShape(currentRoomId, data.shape);
+      
+      io.to(currentRoomId).emit("shape:add", { shape: data.shape, roomId: currentRoomId });
+      
       const historyState = roomManager.getHistoryState(currentRoomId);
       io.to(currentRoomId).emit("history:state", historyState);
     });

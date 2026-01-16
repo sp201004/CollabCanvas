@@ -1,8 +1,9 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import type { Stroke, Point, DrawingTool } from "@shared/schema";
+import type { Stroke, Point, DrawingTool, Shape } from "@shared/schema";
 
 interface DrawingCanvasProps {
   strokes: Stroke[];
+  shapes: Shape[];
   currentTool: DrawingTool;
   currentColor: string;
   strokeWidth: number;
@@ -10,17 +11,28 @@ interface DrawingCanvasProps {
   onStrokeStart: (stroke: Stroke) => void;
   onStrokePoint: (strokeId: string, point: Point) => void;
   onStrokeEnd: (strokeId: string) => void;
+  onShapeAdd: (shape: Shape) => void;
   onCursorMove: (position: Point | null, isDrawing: boolean) => void;
   onLocalStrokeStart: (stroke: Stroke) => void;
   onLocalStrokePoint: (strokeId: string, point: Point) => void;
+  onLocalShapeAdd: (shape: Shape) => void;
+  zoom: number;
+  pan: Point;
+  onZoomChange: (zoom: number) => void;
+  onPanChange: (pan: Point) => void;
 }
 
 function generateStrokeId(): string {
   return `stroke_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+function generateShapeId(): string {
+  return `shape_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export function DrawingCanvas({
   strokes,
+  shapes,
   currentTool,
   currentColor,
   strokeWidth,
@@ -28,9 +40,15 @@ export function DrawingCanvas({
   onStrokeStart,
   onStrokePoint,
   onStrokeEnd,
+  onShapeAdd,
   onCursorMove,
   onLocalStrokeStart,
   onLocalStrokePoint,
+  onLocalShapeAdd,
+  zoom,
+  pan,
+  onZoomChange,
+  onPanChange,
 }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,32 +56,46 @@ export function DrawingCanvas({
   const currentStrokeRef = useRef<string | null>(null);
   const lastPointRef = useRef<Point | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // Shape drawing state
+  const [shapeStart, setShapeStart] = useState<Point | null>(null);
+  const [previewShape, setPreviewShape] = useState<Shape | null>(null);
+  
+  // Pan state
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef<Point | null>(null);
+  const panOffsetRef = useRef<Point>({ x: 0, y: 0 });
 
-  const getCanvasPoint = useCallback((e: MouseEvent | TouchEvent): Point | null => {
+  // Transform screen coordinates to canvas coordinates (accounting for zoom and pan)
+  const screenToCanvas = useCallback((screenX: number, screenY: number): Point => {
+    return {
+      x: (screenX - pan.x) / zoom,
+      y: (screenY - pan.y) / zoom,
+    };
+  }, [zoom, pan]);
+
+  const getCanvasPoint = useCallback((e: MouseEvent | TouchEvent | React.PointerEvent): Point | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
-    // Convert screen coordinates to canvas-local coordinates.
-    // We use getBoundingClientRect() to get the canvas position on screen,
-    // then subtract to get coordinates relative to the canvas top-left.
-    // No DPR scaling here since ctx.scale(dpr) already handles rendering.
     const rect = canvas.getBoundingClientRect();
 
     let clientX: number, clientY: number;
-    if ("touches" in e) {
-      if (e.touches.length === 0) return null;
+    if ("touches" in e && e.touches.length > 0) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
-    } else {
+    } else if ("clientX" in e) {
       clientX = e.clientX;
       clientY = e.clientY;
+    } else {
+      return null;
     }
 
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
-    };
-  }, []);
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
+    
+    return screenToCanvas(screenX, screenY);
+  }, [screenToCanvas]);
 
   const drawStroke = useCallback((ctx: CanvasRenderingContext2D, stroke: Stroke) => {
     if (stroke.points.length < 2) return;
@@ -97,6 +129,48 @@ export function DrawingCanvas({
     ctx.globalCompositeOperation = "source-over";
   }, []);
 
+  const drawShape = useCallback((ctx: CanvasRenderingContext2D, shape: Shape) => {
+    ctx.beginPath();
+    ctx.strokeStyle = shape.color;
+    ctx.lineWidth = shape.width;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const { startPoint, endPoint, type } = shape;
+
+    switch (type) {
+      case "rectangle":
+        ctx.strokeRect(
+          startPoint.x,
+          startPoint.y,
+          endPoint.x - startPoint.x,
+          endPoint.y - startPoint.y
+        );
+        break;
+      case "circle": {
+        const radiusX = Math.abs(endPoint.x - startPoint.x) / 2;
+        const radiusY = Math.abs(endPoint.y - startPoint.y) / 2;
+        const centerX = startPoint.x + (endPoint.x - startPoint.x) / 2;
+        const centerY = startPoint.y + (endPoint.y - startPoint.y) / 2;
+        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        break;
+      }
+      case "line":
+        ctx.moveTo(startPoint.x, startPoint.y);
+        ctx.lineTo(endPoint.x, endPoint.y);
+        ctx.stroke();
+        break;
+      case "text":
+        if (shape.text) {
+          ctx.font = `${shape.width * 4}px sans-serif`;
+          ctx.fillStyle = shape.color;
+          ctx.fillText(shape.text, startPoint.x, startPoint.y);
+        }
+        break;
+    }
+  }, []);
+
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -104,13 +178,32 @@ export function DrawingCanvas({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Clear and fill with white background
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Apply zoom and pan transformation
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, pan.x * dpr, pan.y * dpr);
+
+    // Draw all strokes
     strokes.forEach((stroke) => {
       drawStroke(ctx, stroke);
     });
-  }, [strokes, drawStroke]);
+
+    // Draw all shapes
+    shapes.forEach((shape) => {
+      drawShape(ctx, shape);
+    });
+
+    // Draw preview shape if dragging
+    if (previewShape) {
+      ctx.globalAlpha = 0.6;
+      drawShape(ctx, previewShape);
+      ctx.globalAlpha = 1;
+    }
+  }, [strokes, shapes, drawStroke, drawShape, previewShape, zoom, pan]);
 
   useEffect(() => {
     if (animationFrameRef.current) {
@@ -139,17 +232,44 @@ export function DrawingCanvas({
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
 
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.scale(dpr, dpr);
-        redrawCanvas();
-      }
+      redrawCanvas();
     };
 
     updateCanvasSize();
     window.addEventListener("resize", updateCanvasSize);
     return () => window.removeEventListener("resize", updateCanvasSize);
-  }, []);
+  }, [redrawCanvas]);
+
+  // Handle mouse wheel for zoom
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      // Zoom speed factor
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
+      
+      // Zoom towards mouse position
+      const zoomChange = newZoom / zoom;
+      const newPanX = mouseX - (mouseX - pan.x) * zoomChange;
+      const newPanY = mouseY - (mouseY - pan.y) * zoomChange;
+      
+      onZoomChange(newZoom);
+      onPanChange({ x: newPanX, y: newPanY });
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [zoom, pan, onZoomChange, onPanChange]);
+
+  const isShapeTool = currentTool === "rectangle" || currentTool === "circle" || currentTool === "line" || currentTool === "text";
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -159,53 +279,95 @@ export function DrawingCanvas({
 
       canvas.setPointerCapture(e.pointerId);
 
-      const point = getCanvasPoint(e.nativeEvent as MouseEvent);
+      // Middle mouse button or space+click for panning
+      if (e.button === 1) {
+        setIsPanning(true);
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+        panOffsetRef.current = { ...pan };
+        return;
+      }
+
+      const point = getCanvasPoint(e);
       if (!point) return;
 
-      const strokeId = generateStrokeId();
-      currentStrokeRef.current = strokeId;
-      lastPointRef.current = point;
-      setIsDrawing(true);
+      if (isShapeTool) {
+        // Start shape drawing
+        setShapeStart(point);
+        setIsDrawing(true);
+        onCursorMove(point, true);
+      } else {
+        // Start stroke drawing
+        const strokeId = generateStrokeId();
+        currentStrokeRef.current = strokeId;
+        lastPointRef.current = point;
+        setIsDrawing(true);
 
-      const newStroke: Stroke = {
-        id: strokeId,
-        points: [point],
-        color: currentColor,
-        width: strokeWidth,
-        userId,
-        tool: currentTool,
-        timestamp: Date.now(),
-      };
+        const newStroke: Stroke = {
+          id: strokeId,
+          points: [point],
+          color: currentColor,
+          width: strokeWidth,
+          userId,
+          tool: currentTool as "brush" | "eraser",
+          timestamp: Date.now(),
+        };
 
-      onLocalStrokeStart(newStroke);
-      onStrokeStart(newStroke);
-      onCursorMove(point, true);
+        onLocalStrokeStart(newStroke);
+        onStrokeStart(newStroke);
+        onCursorMove(point, true);
+      }
     },
-    [currentColor, strokeWidth, userId, currentTool, onStrokeStart, onCursorMove, onLocalStrokeStart, getCanvasPoint]
+    [currentColor, strokeWidth, userId, currentTool, onStrokeStart, onCursorMove, onLocalStrokeStart, getCanvasPoint, isShapeTool, pan]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      const point = getCanvasPoint(e.nativeEvent as MouseEvent);
+      // Handle panning
+      if (isPanning && panStartRef.current) {
+        const dx = e.clientX - panStartRef.current.x;
+        const dy = e.clientY - panStartRef.current.y;
+        onPanChange({
+          x: panOffsetRef.current.x + dx,
+          y: panOffsetRef.current.y + dy,
+        });
+        return;
+      }
+
+      const point = getCanvasPoint(e);
       if (!point) return;
 
       onCursorMove(point, isDrawing);
 
-      if (!isDrawing || !currentStrokeRef.current) return;
+      if (!isDrawing) return;
 
-      const lastPoint = lastPointRef.current;
-      if (lastPoint) {
-        const dx = point.x - lastPoint.x;
-        const dy = point.y - lastPoint.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 2) return;
+      if (isShapeTool && shapeStart) {
+        // Update preview shape
+        setPreviewShape({
+          id: "preview",
+          type: currentTool as "rectangle" | "circle" | "line" | "text",
+          startPoint: shapeStart,
+          endPoint: point,
+          color: currentColor,
+          width: strokeWidth,
+          userId,
+          timestamp: Date.now(),
+        });
+      } else if (currentStrokeRef.current) {
+        // Add stroke point
+        const lastPoint = lastPointRef.current;
+        if (lastPoint) {
+          const dx = point.x - lastPoint.x;
+          const dy = point.y - lastPoint.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < 2) return;
+        }
+
+        lastPointRef.current = point;
+        onLocalStrokePoint(currentStrokeRef.current, point);
+        onStrokePoint(currentStrokeRef.current, point);
       }
-
-      lastPointRef.current = point;
-      onLocalStrokePoint(currentStrokeRef.current, point);
-      onStrokePoint(currentStrokeRef.current, point);
     },
-    [isDrawing, onStrokePoint, onCursorMove, onLocalStrokePoint, getCanvasPoint]
+    [isDrawing, onStrokePoint, onCursorMove, onLocalStrokePoint, getCanvasPoint, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, isPanning, onPanChange]
   );
 
   const handlePointerUp = useCallback(
@@ -215,7 +377,51 @@ export function DrawingCanvas({
         canvas.releasePointerCapture(e.pointerId);
       }
 
-      if (currentStrokeRef.current) {
+      // End panning
+      if (isPanning) {
+        setIsPanning(false);
+        panStartRef.current = null;
+        return;
+      }
+
+      if (isShapeTool && shapeStart) {
+        const point = getCanvasPoint(e);
+        if (point) {
+          if (currentTool === "text") {
+            const text = prompt("Enter text:");
+            if (text) {
+              const newShape: Shape = {
+                id: generateShapeId(),
+                type: "text",
+                startPoint: shapeStart,
+                endPoint: point,
+                color: currentColor,
+                width: strokeWidth,
+                userId,
+                timestamp: Date.now(),
+                text,
+              };
+              onLocalShapeAdd(newShape);
+              onShapeAdd(newShape);
+            }
+          } else {
+            const newShape: Shape = {
+              id: generateShapeId(),
+              type: currentTool as "rectangle" | "circle" | "line",
+              startPoint: shapeStart,
+              endPoint: point,
+              color: currentColor,
+              width: strokeWidth,
+              userId,
+              timestamp: Date.now(),
+            };
+            onLocalShapeAdd(newShape);
+            onShapeAdd(newShape);
+          }
+        }
+        setShapeStart(null);
+        setPreviewShape(null);
+      } else if (currentStrokeRef.current) {
         onStrokeEnd(currentStrokeRef.current);
       }
 
@@ -224,7 +430,7 @@ export function DrawingCanvas({
       lastPointRef.current = null;
       onCursorMove(null, false);
     },
-    [onStrokeEnd, onCursorMove]
+    [onStrokeEnd, onCursorMove, isShapeTool, shapeStart, currentTool, currentColor, strokeWidth, userId, onShapeAdd, onLocalShapeAdd, getCanvasPoint, isPanning]
   );
 
   const handlePointerLeave = useCallback(() => {
@@ -237,7 +443,6 @@ export function DrawingCanvas({
       className="relative w-full h-full rounded-lg overflow-hidden shadow-sm border border-border/30"
       data-testid="canvas-container"
       style={{
-        /* Canva-inspired subtle dotted grid background for spacious whiteboard feel */
         background: `
           radial-gradient(circle, #e5e7eb 1px, transparent 1px),
           linear-gradient(to bottom, #fafafa, #ffffff)
@@ -249,9 +454,13 @@ export function DrawingCanvas({
         ref={canvasRef}
         className="absolute inset-0 touch-none"
         style={{ 
-          cursor: currentTool === "eraser" 
-            ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3C/svg%3E") 12 12, crosshair`
-            : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M12 19l7-7 3 3-7 7-3-3z'/%3E%3Cpath d='M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z'/%3E%3Cpath d='M2 2l7.586 7.586'/%3E%3C/svg%3E") 2 22, crosshair`,
+          cursor: isPanning 
+            ? "grabbing"
+            : isShapeTool 
+              ? "crosshair"
+              : currentTool === "eraser" 
+                ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3C/svg%3E") 12 12, crosshair`
+                : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M12 19l7-7 3 3-7 7-3-3z'/%3E%3Cpath d='M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z'/%3E%3Cpath d='M2 2l7.586 7.586'/%3E%3C/svg%3E") 2 22, crosshair`,
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -259,6 +468,11 @@ export function DrawingCanvas({
         onPointerLeave={handlePointerLeave}
         data-testid="drawing-canvas"
       />
+      
+      {/* Zoom indicator */}
+      <div className="absolute bottom-2 right-2 bg-background/80 px-2 py-1 rounded text-xs text-muted-foreground" data-testid="zoom-indicator">
+        {Math.round(zoom * 100)}%
+      </div>
     </div>
   );
 }

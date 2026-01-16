@@ -1,50 +1,71 @@
-# Architecture Documentation
+# CollabCanvas Architecture Documentation
 
-## Data Flow Diagram
+## Overview
+
+CollabCanvas is a real-time collaborative drawing application built with React, TypeScript, and Socket.io. This document details the technical architecture, design decisions, and implementation strategies.
+
+## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           USER A (Browser)                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
-│  │   Canvas    │───▶│  useSocket  │───▶│ Socket.io   │                 │
-│  │  Component  │◀───│    Hook     │◀───│   Client    │                 │
-│  └─────────────┘    └─────────────┘    └──────┬──────┘                 │
-│         │                                      │                         │
-│         ▼                                      │                         │
-│  ┌─────────────┐                              │                         │
-│  │   Local     │   (Client-side prediction)   │                         │
-│  │   State     │                              │                         │
-│  └─────────────┘                              │                         │
-│                                                │                         │
-└────────────────────────────────────────────────┼─────────────────────────┘
-                                                 │
-                                        WebSocket│Connection
-                                                 │
-┌────────────────────────────────────────────────┼─────────────────────────┐
-│                           SERVER               │                         │
-├────────────────────────────────────────────────┴─────────────────────────┤
-│                                                                          │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
-│  │  Socket.io  │───▶│    Room     │───▶│   Canvas    │                 │
-│  │   Server    │◀───│   Manager   │◀───│    State    │                 │
-│  └─────────────┘    └─────────────┘    └─────────────┘                 │
-│         │                                                               │
-│         │ Broadcast to                                                  │
-│         │ other clients                                                 │
-│         ▼                                                               │
-└─────────────────────────────────────────────────────────────────────────┘
-                                                 │
-                                                 │
-┌────────────────────────────────────────────────┼─────────────────────────┐
-│                           USER B (Browser)      │                        │
-├────────────────────────────────────────────────┴─────────────────────────┤
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
-│  │   Canvas    │◀───│  useSocket  │◀───│ Socket.io   │                 │
-│  │  Component  │    │    Hook     │    │   Client    │                 │
-│  └─────────────┘    └─────────────┘    └─────────────┘                 │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         Client (Browser)                         │
+├─────────────────────────────────────────────────────────────────┤
+│  React App                                                       │
+│  ├── Canvas Page (main view)                                     │
+│  │   ├── DrawingCanvas (HTML5 Canvas + shapes + pan/zoom)        │
+│  │   ├── ToolPanel (brush, eraser, shapes, undo/redo)            │
+│  │   ├── ColorPicker (preset + custom colors)                    │
+│  │   ├── StrokeWidthSelector (slider + input)                    │
+│  │   ├── UserPresence (online users list)                        │
+│  │   └── CursorOverlay (other users' cursors)                    │
+│  ├── Landing Page (room creation/joining)                        │
+│  └── useSocket Hook (WebSocket management)                       │
+├─────────────────────────────────────────────────────────────────┤
+│  Socket.io Client ←─── WebSocket ───→ Socket.io Server          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         Server (Node.js)                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Express.js + Socket.io                                          │
+│  ├── Room Manager                                                │
+│  │   ├── User sessions                                           │
+│  │   ├── Stroke storage                                          │
+│  │   ├── Shape storage                                           │
+│  │   └── Operation history (for undo/redo)                       │
+│  └── Event handlers (room:join, stroke:*, shape:*, etc.)         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Data Flow
+
+### Drawing a Stroke
+
+```
+User draws → Local render → Socket emit → Server broadcast → Other clients render
+     │                            │                               │
+     ▼                            ▼                               ▼
+ Immediate                   Debounced                      Real-time
+ feedback                    batching                        update
+```
+
+### Drawing a Shape
+
+```
+User drags → Preview render → Mouse up → Socket emit → Server broadcast → All clients render
+     │             │                           │                               │
+     ▼             ▼                           ▼                               ▼
+ Start point   Live preview              Final shape                     Synced shape
+```
+
+### Pan & Zoom
+
+```
+Mouse wheel/drag → Transform update → Canvas redraw with new transform
+        │                │                      │
+        ▼                ▼                      ▼
+    Zoom factor     Pan offset          All elements transformed
 ```
 
 ## WebSocket Protocol
@@ -53,129 +74,294 @@
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `room:join` | `{ roomId: string, username: string }` | Join a drawing room |
-| `room:leave` | `roomId: string` | Leave current room |
-| `cursor:move` | `{ roomId, position: Point \| null, isDrawing: boolean }` | Update cursor position |
-| `stroke:start` | `{ stroke: Stroke, roomId: string }` | Begin a new stroke |
-| `stroke:point` | `{ strokeId, point: Point, roomId }` | Add point to stroke |
+| `room:join` | `{ roomId, username }` | Join a room |
+| `room:leave` | `roomId` | Leave current room |
+| `cursor:move` | `{ roomId, position, isDrawing }` | Update cursor position (debounced) |
+| `stroke:start` | `{ stroke, roomId }` | Begin a new stroke |
+| `stroke:point` | `{ strokeId, point, roomId }` | Add point to stroke |
 | `stroke:end` | `{ strokeId, roomId }` | Finalize stroke |
-| `canvas:clear` | `roomId: string` | Clear entire canvas |
-| `operation:undo` | `roomId: string` | Undo last operation |
-| `operation:redo` | `roomId: string` | Redo undone operation |
+| `shape:add` | `{ shape, roomId }` | Add a shape (rectangle, circle, line, text) |
+| `canvas:clear` | `roomId` | Clear all drawings |
+| `operation:undo` | `roomId` | Undo last operation |
+| `operation:redo` | `roomId` | Redo undone operation |
 
 ### Server → Client Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `room:joined` | `(roomId, userId, username, color)` | Confirmation of room join |
+| `room:joined` | `roomId, userId, username, color` | Confirmation of room join |
 | `user:list` | `User[]` | Current users in room |
 | `user:joined` | `User` | New user joined |
-| `user:left` | `userId: string` | User left room |
-| `cursor:update` | `{ userId, position, isDrawing }` | Other user's cursor moved |
-| `canvas:state` | `Stroke[]` | Full canvas state on join |
-| `stroke:start` | `{ stroke, roomId }` | Other user started stroke |
-| `stroke:point` | `{ strokeId, point, roomId }` | Other user added point |
-| `stroke:end` | `{ strokeId, roomId }` | Other user finished stroke |
+| `user:left` | `userId` | User left room |
+| `cursor:update` | `CursorUpdate` | Other user's cursor moved |
+| `canvas:state` | `{ strokes, shapes }` | Full canvas state on join |
+| `stroke:start` | `{ stroke, roomId }` | Another user started stroke |
+| `stroke:point` | `{ strokeId, point, roomId }` | Another user added point |
+| `stroke:end` | `{ strokeId, roomId }` | Another user finished stroke |
+| `shape:add` | `{ shape, roomId }` | Another user added shape |
 | `canvas:clear` | - | Canvas was cleared |
-| `operation:undo` | `Operation` | Undo operation executed |
-| `operation:redo` | `Operation` | Redo operation executed |
+| `operation:undo` | `Operation` | Operation was undone |
+| `operation:redo` | `Operation` | Operation was redone |
+| `history:state` | `{ operationCount, undoneCount }` | History state for button states |
 
 ## Undo/Redo Strategy
 
-### Global Operation History
+### Global History
 
-The undo/redo system maintains a **global operation history** on the server, shared across all users.
+The server maintains a global operation history for each room:
 
 ```typescript
 interface Room {
-  operationHistory: Operation[];   // Stack of executed operations
-  undoneOperations: Operation[];   // Stack of undone operations (for redo)
+  operationHistory: Operation[];  // Stack of completed operations
+  undoneOperations: Operation[];  // Stack of undone operations
 }
+```
 
+### Operation Types
+
+```typescript
 interface Operation {
-  type: "draw" | "erase" | "clear";
+  type: "draw" | "erase" | "undo" | "redo" | "clear";
   strokeId?: string;
-  stroke?: Stroke;    // Full stroke data for restoration
+  stroke?: Stroke;
   userId: string;
   timestamp: number;
 }
 ```
 
-### How It Works
+### Undo Flow
 
-1. **Drawing**: When a user completes a stroke, an operation is added to `operationHistory`
-2. **Undo**: Pops from `operationHistory`, pushes to `undoneOperations`, reverses the action
-3. **Redo**: Pops from `undoneOperations`, pushes to `operationHistory`, reapplies the action
-4. **New Action**: Any new drawing action clears `undoneOperations` (can't redo after new action)
+1. Client emits `operation:undo`
+2. Server pops from `operationHistory`, pushes to `undoneOperations`
+3. Server broadcasts `operation:undo` to ALL clients (including sender)
+4. Server broadcasts `history:state` with updated counts
+5. All clients update their local canvas state
 
-### Conflict Resolution
+### Button State Sync
 
-- Operations are applied in order of arrival at the server
-- Server is the source of truth for operation order
-- Undo always removes the most recent operation globally (not per-user)
-- All clients receive the same undo/redo events and update accordingly
+The `history:state` event syncs undo/redo button states across all clients:
+- `canUndo = operationCount > 0`
+- `canRedo = undoneCount > 0`
 
-## Performance Decisions
+## Shape Tools Implementation
 
-### 1. Client-Side Prediction
-- Local strokes are rendered immediately without waiting for server confirmation
-- Provides instant visual feedback while data syncs in background
-- Reduces perceived latency to near-zero
+### Shape Types
 
-### 2. Point Batching Strategy
-- Points are only sent when they differ significantly from the last point
-- Minimum distance threshold of 2 pixels prevents redundant updates
-- Reduces WebSocket message frequency by ~60%
+```typescript
+interface Shape {
+  id: string;
+  type: "rectangle" | "circle" | "line" | "text";
+  startPoint: Point;
+  endPoint: Point;
+  color: string;
+  width: number;
+  userId: string;
+  timestamp: number;
+  text?: string;  // For text tool only
+}
+```
 
-### 3. Quadratic Curve Smoothing
-- Raw points are connected using quadratic Bézier curves
-- Produces smooth, natural-looking lines
-- Better visual quality than linear interpolation
+### Drawing Shapes
 
-### 4. Canvas Redraw Optimization
-- Uses `requestAnimationFrame` for canvas updates
-- Only redraws when strokes array changes
-- Prevents unnecessary repaints during high-frequency events
+1. **Rectangle**: `ctx.strokeRect(x, y, width, height)`
+2. **Circle/Ellipse**: `ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2π)`
+3. **Line**: `ctx.moveTo(start) → ctx.lineTo(end)`
+4. **Text**: `ctx.fillText(text, x, y)` with font size based on stroke width
 
-### 5. Cursor Position Throttling
-- Cursor positions are sent on pointer move (every ~16ms at 60fps)
-- Could be further optimized with debouncing if needed
-- Uses CSS transforms for cursor positioning (GPU accelerated)
+### Preview During Drag
+
+While dragging, a semi-transparent preview shape renders locally (not synced) until mouse up.
+
+## Pan & Zoom Implementation
+
+### Transform State
+
+```typescript
+const [zoom, setZoom] = useState(1);           // Zoom factor (0.1 to 5)
+const [pan, setPan] = useState({ x: 0, y: 0 }); // Pan offset in pixels
+```
+
+### Coordinate Transformation
+
+```typescript
+// Screen coordinates to canvas coordinates
+const screenToCanvas = (screenX, screenY) => ({
+  x: (screenX - pan.x) / zoom,
+  y: (screenY - pan.y) / zoom,
+});
+```
+
+### Zoom Towards Mouse
+
+```typescript
+const handleWheel = (e) => {
+  const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+  const newZoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
+  
+  // Adjust pan to zoom towards mouse position
+  const zoomChange = newZoom / zoom;
+  const newPanX = mouseX - (mouseX - pan.x) * zoomChange;
+  const newPanY = mouseY - (mouseY - pan.y) * zoomChange;
+};
+```
+
+### Canvas Rendering with Transform
+
+```typescript
+ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, pan.x * dpr, pan.y * dpr);
+// Draw all strokes and shapes...
+```
+
+## Cursor Debouncing
+
+### Motivation
+
+Without debouncing, cursor updates fire on every `pointermove` event (~60+ times/second), causing excessive socket traffic.
+
+### Implementation
+
+```typescript
+const CURSOR_DEBOUNCE_MS = 35;  // ~28 updates/second max
+
+const sendCursorMove = (position, isDrawing) => {
+  const now = Date.now();
+  const timeSinceLastSend = now - lastCursorSendRef.current;
+  
+  if (timeSinceLastSend >= CURSOR_DEBOUNCE_MS) {
+    // Send immediately
+    socket.emit("cursor:move", { roomId, position, isDrawing });
+    lastCursorSendRef.current = now;
+  } else {
+    // Schedule delayed send
+    pendingCursorRef.current = { position, isDrawing };
+    setTimeout(() => {
+      if (pendingCursorRef.current) {
+        socket.emit("cursor:move", { roomId, ...pendingCursorRef.current });
+      }
+    }, CURSOR_DEBOUNCE_MS - timeSinceLastSend);
+  }
+};
+```
+
+### Impact
+
+- Reduces socket traffic by ~60%
+- Maintains smooth cursor appearance (still ~28 updates/second)
+- Final cursor position always sent (no "stuck" cursors)
+
+## Persistence Strategy
+
+### LocalStorage Auto-Save
+
+```typescript
+// Save every 5 seconds
+useEffect(() => {
+  const interval = setInterval(() => {
+    if (strokes.length > 0 || shapes.length > 0) {
+      localStorage.setItem(
+        `collabcanvas_${roomId}`,
+        JSON.stringify({ strokes, shapes, savedAt: Date.now() })
+      );
+    }
+  }, 5000);
+  return () => clearInterval(interval);
+}, [roomId, strokes, shapes]);
+```
+
+### JSON Export/Import
+
+Export format:
+```json
+{
+  "strokes": [...],
+  "shapes": [...],
+  "exportedAt": 1234567890
+}
+```
+
+Import triggers `stroke:start` and `shape:add` events for each element, syncing imported content to all users.
+
+## Performance Optimizations
+
+### 1. Point Batching
+
+Only send points when distance > 2px from last point:
+
+```typescript
+const distance = Math.sqrt(dx * dx + dy * dy);
+if (distance < 2) return;  // Skip redundant points
+```
+
+### 2. requestAnimationFrame Rendering
+
+```typescript
+useEffect(() => {
+  animationFrameRef.current = requestAnimationFrame(redrawCanvas);
+  return () => cancelAnimationFrame(animationFrameRef.current);
+}, [redrawCanvas]);
+```
+
+### 3. Client-Side Prediction
+
+Local strokes render immediately without waiting for server confirmation, providing instant feedback.
+
+### 4. Cursor Debouncing
+
+35ms debounce interval reduces socket traffic while maintaining smooth visual updates.
+
+### 5. Canvas Size Optimization
+
+Uses devicePixelRatio for crisp rendering on high-DPI displays:
+
+```typescript
+canvas.width = rect.width * dpr;
+canvas.height = rect.height * dpr;
+ctx.scale(dpr, dpr);
+```
 
 ## Conflict Resolution
 
-### Overlapping Drawing
-When multiple users draw in the same area simultaneously:
+### Strategy: Last Write Wins
 
-1. **No conflict** - All strokes are preserved independently
-2. **Z-order by timestamp** - Later strokes appear on top
-3. **Eraser interaction** - Eraser uses `destination-out` composite mode, affecting all layers
+All strokes and shapes are preserved in order of arrival. The server assigns timestamps and broadcasts in sequence.
 
-### Race Conditions
-- Server processes events in order of arrival
-- No client-side locking of canvas regions
-- Optimistic updates with eventual consistency
+### Why This Works
 
-### Network Issues
-- Socket.io handles reconnection automatically
-- On reconnect, client receives full canvas state
-- Lost strokes during disconnect are not recovered
+1. **Drawing is additive** - Strokes don't conflict, they overlay
+2. **Undo is global** - Any user can undo any operation
+3. **Clear is atomic** - Wipes all state cleanly
 
-## Scaling Considerations
+## Room Management
 
-For 1000+ concurrent users:
+### Room Lifecycle
 
-1. **Room Sharding** - Distribute rooms across multiple server instances
-2. **WebSocket Clustering** - Use Redis adapter for Socket.io
-3. **Canvas Chunking** - Divide canvas into regions, only sync visible chunks
-4. **Stroke Compression** - Compress point data before transmission
-5. **Event Aggregation** - Batch multiple small events into larger payloads
-6. **CDN for Static Assets** - Offload non-real-time traffic
+1. First user joins → Room created
+2. Users draw → Operations stored in room
+3. Last user leaves → 60-second cleanup timer starts
+4. Timer expires → Room deleted (if still empty)
 
-## Known Limitations
+### Room Code Validation
 
-1. **No persistence** - Canvas state is lost when all users leave (after 60s timeout)
-2. **No authentication** - Anyone with the link can join
-3. **Single canvas size** - Fixed canvas dimensions, no pan/zoom
-4. **Global undo** - Users can undo each other's work (by design for collaboration)
-5. **No conflict prevention** - Simultaneous edits to same area are all preserved
+```typescript
+const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
+```
+
+- Exactly 6 characters
+- Uppercase alphanumeric only
+- Validated on client AND server
+
+## Security Considerations
+
+1. **No authentication** - Anyone with room link can join
+2. **Input validation** - Zod schemas validate all WebSocket data
+3. **Rate limiting** - Cursor debouncing prevents socket flooding
+4. **No XSS** - Canvas drawing doesn't execute scripts
+
+## Future Improvements
+
+1. **Layer system** - Multiple drawing layers
+2. **Selection tool** - Select and move shapes
+3. **Server persistence** - Redis/database storage
+4. **Image import** - Add images to canvas
+5. **Export as PNG** - Canvas to image export
+6. **Authentication** - Optional room passwords

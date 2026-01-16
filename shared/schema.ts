@@ -45,8 +45,23 @@ export const roomSchema = z.object({
 
 export type Room = z.infer<typeof roomSchema>;
 
-export const drawingToolSchema = z.enum(["brush", "eraser"]);
+export const drawingToolSchema = z.enum(["brush", "eraser", "rectangle", "circle", "line", "text"]);
 export type DrawingTool = z.infer<typeof drawingToolSchema>;
+
+// Shape types for rectangle, circle, line, text tools
+export const shapeSchema = z.object({
+  id: z.string(),
+  type: z.enum(["rectangle", "circle", "line", "text"]),
+  startPoint: pointSchema,
+  endPoint: pointSchema,
+  color: z.string(),
+  width: z.number(),
+  userId: z.string(),
+  timestamp: z.number(),
+  text: z.string().optional(), // For text tool
+});
+
+export type Shape = z.infer<typeof shapeSchema>;
 
 export const cursorUpdateSchema = z.object({
   userId: z.string(),

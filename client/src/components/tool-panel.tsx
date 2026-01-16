@@ -1,4 +1,4 @@
-import { Brush, Eraser, Undo2, Redo2, Trash2 } from "lucide-react";
+import { Brush, Eraser, Undo2, Redo2, Trash2, Square, Circle, Minus, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -35,10 +35,8 @@ export function ToolPanel({
 }: ToolPanelProps) {
   return (
     <div className="flex flex-col gap-2 p-2.5 bg-card border border-card-border rounded-lg" data-testid="tool-panel">
-      {/* Section header - Canva-style subtle label */}
-      <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">Tools</span>
+      <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">Draw</span>
       
-      {/* Drawing tools - horizontal row for compact layout */}
       <div className="flex justify-center gap-1.5">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -75,10 +73,82 @@ export function ToolPanel({
         </Tooltip>
       </div>
 
-      {/* Subtle divider */}
       <div className="w-full h-px bg-border/50" />
 
-      {/* History controls - horizontal row */}
+      <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">Shapes</span>
+      
+      <div className="flex justify-center gap-1.5 flex-wrap">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={currentTool === "rectangle" ? "default" : "ghost"}
+              onClick={() => onToolChange("rectangle")}
+              className="h-9 w-9"
+              data-testid="button-rectangle-tool"
+            >
+              <Square className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Rectangle (R)</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={currentTool === "circle" ? "default" : "ghost"}
+              onClick={() => onToolChange("circle")}
+              className="h-9 w-9"
+              data-testid="button-circle-tool"
+            >
+              <Circle className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Circle (C)</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={currentTool === "line" ? "default" : "ghost"}
+              onClick={() => onToolChange("line")}
+              className="h-9 w-9"
+              data-testid="button-line-tool"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Line (L)</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={currentTool === "text" ? "default" : "ghost"}
+              onClick={() => onToolChange("text")}
+              className="h-9 w-9"
+              data-testid="button-text-tool"
+            >
+              <Type className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Text (T)</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      <div className="w-full h-px bg-border/50" />
+
       <div className="flex justify-center gap-1.5">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -117,10 +187,8 @@ export function ToolPanel({
         </Tooltip>
       </div>
 
-      {/* Subtle divider */}
       <div className="w-full h-px bg-border/50" />
 
-      {/* Clear action with confirmation dialog */}
       <div className="flex justify-center">
         <AlertDialog>
           <Tooltip>

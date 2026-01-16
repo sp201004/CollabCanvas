@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getSocket, disconnectSocket } from "@/lib/socket";
-import type { Stroke, Point, User, CursorUpdate, DrawingTool } from "@shared/schema";
+import type { Stroke, Point, User, CursorUpdate, DrawingTool, Shape } from "@shared/schema";
 
 interface UseSocketOptions {
   roomId: string;
@@ -13,6 +13,7 @@ interface UseSocketReturn {
   currentUser: User | null;
   users: User[];
   strokes: Stroke[];
+  shapes: Shape[];
   cursors: Map<string, CursorUpdate>;
   socket: ReturnType<typeof getSocket> | null;
   canUndo: boolean;
@@ -21,23 +22,34 @@ interface UseSocketReturn {
   startStroke: (stroke: Stroke) => void;
   addStrokePoint: (strokeId: string, point: Point) => void;
   endStroke: (strokeId: string) => void;
+  addShape: (shape: Shape) => void;
   clearCanvas: () => void;
   undo: () => void;
   redo: () => void;
   addLocalStroke: (stroke: Stroke) => void;
   updateLocalStroke: (strokeId: string, point: Point) => void;
+  addLocalShape: (shape: Shape) => void;
 }
+
+// Cursor debounce interval in ms (reduces socket traffic)
+const CURSOR_DEBOUNCE_MS = 35;
 
 export function useSocket({ roomId, username, enabled = true }: UseSocketOptions): UseSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [shapes, setShapes] = useState<Shape[]>([]);
   const [cursors, setCursors] = useState<Map<string, CursorUpdate>>(new Map());
-  // Track undo/redo availability based on operation history
   const [operationCount, setOperationCount] = useState(0);
   const [undoneCount, setUndoneCount] = useState(0);
   const strokesRef = useRef<Map<string, Stroke>>(new Map());
+  const shapesRef = useRef<Map<string, Shape>>(new Map());
+  
+  // Cursor debounce state
+  const lastCursorSendRef = useRef<number>(0);
+  const pendingCursorRef = useRef<{ position: Point | null; isDrawing: boolean } | null>(null);
+  const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!enabled || !username) {
@@ -92,16 +104,15 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       });
     }
 
-    function onCanvasState(canvasStrokes: Stroke[]) {
-      setStrokes(canvasStrokes);
-      strokesRef.current = new Map(canvasStrokes.map((s) => [s.id, s]));
-      // Note: We can't know true operation history from canvas state alone
-      // Set initial count based on strokes, will be corrected by subsequent events
-      setOperationCount(canvasStrokes.length);
+    function onCanvasState(data: { strokes: Stroke[]; shapes: Shape[] }) {
+      setStrokes(data.strokes);
+      setShapes(data.shapes || []);
+      strokesRef.current = new Map(data.strokes.map((s) => [s.id, s]));
+      shapesRef.current = new Map((data.shapes || []).map((s) => [s.id, s]));
+      setOperationCount(data.strokes.length + (data.shapes?.length || 0));
       setUndoneCount(0);
     }
 
-    // Server sends history state to sync canUndo/canRedo properly
     function onHistoryState(data: { operationCount: number; undoneCount: number }) {
       setOperationCount(data.operationCount);
       setUndoneCount(data.undoneCount);
@@ -128,14 +139,21 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     function onStrokeEnd(data: { strokeId: string; roomId: string }) {
       if (data.roomId === roomId) {
         setStrokes(Array.from(strokesRef.current.values()));
-        // Note: Server broadcasts history:state after stroke:end, so we don't need to update counts here
+      }
+    }
+
+    function onShapeAdd(data: { shape: Shape; roomId: string }) {
+      if (data.roomId === roomId) {
+        shapesRef.current.set(data.shape.id, data.shape);
+        setShapes(Array.from(shapesRef.current.values()));
       }
     }
 
     function onCanvasClear() {
       strokesRef.current.clear();
+      shapesRef.current.clear();
       setStrokes([]);
-      // Clear resets all history
+      setShapes([]);
       setOperationCount(0);
       setUndoneCount(0);
     }
@@ -143,12 +161,13 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
       if (operation.type === "draw" && operation.strokeId) {
         strokesRef.current.delete(operation.strokeId);
+        shapesRef.current.delete(operation.strokeId);
         setStrokes(Array.from(strokesRef.current.values()));
+        setShapes(Array.from(shapesRef.current.values()));
       } else if (operation.type === "erase" && operation.stroke) {
         strokesRef.current.set(operation.stroke.id, operation.stroke);
         setStrokes(Array.from(strokesRef.current.values()));
       }
-      // Note: Server broadcasts history:state after undo, so we don't need to update counts here
     }
 
     function onOperationRedo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
@@ -159,7 +178,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
         strokesRef.current.delete(operation.strokeId);
         setStrokes(Array.from(strokesRef.current.values()));
       }
-      // Note: Server broadcasts history:state after redo, so we don't need to update counts here
     }
 
     socket.on("connect", onConnect);
@@ -174,6 +192,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     socket.on("stroke:start", onStrokeStart);
     socket.on("stroke:point", onStrokePoint);
     socket.on("stroke:end", onStrokeEnd);
+    socket.on("shape:add", onShapeAdd);
     socket.on("canvas:clear", onCanvasClear);
     socket.on("operation:undo", onOperationUndo);
     socket.on("operation:redo", onOperationRedo);
@@ -195,17 +214,56 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       socket.off("stroke:start", onStrokeStart);
       socket.off("stroke:point", onStrokePoint);
       socket.off("stroke:end", onStrokeEnd);
+      socket.off("shape:add", onShapeAdd);
       socket.off("canvas:clear", onCanvasClear);
       socket.off("operation:undo", onOperationUndo);
       socket.off("operation:redo", onOperationRedo);
       socket.emit("room:leave", roomId);
+      
+      // Cleanup cursor debounce timeout
+      if (cursorTimeoutRef.current) {
+        clearTimeout(cursorTimeoutRef.current);
+      }
     };
   }, [roomId, username, enabled]);
 
+  // Debounced cursor move - reduces socket traffic by ~60%
   const sendCursorMove = useCallback(
     (position: Point | null, isDrawing: boolean) => {
-      const socket = getSocket();
-      socket.emit("cursor:move", { roomId, position, isDrawing });
+      const now = Date.now();
+      const timeSinceLastSend = now - lastCursorSendRef.current;
+      
+      // Store latest cursor position
+      pendingCursorRef.current = { position, isDrawing };
+      
+      // If enough time has passed, send immediately
+      if (timeSinceLastSend >= CURSOR_DEBOUNCE_MS) {
+        lastCursorSendRef.current = now;
+        const socket = getSocket();
+        socket.emit("cursor:move", { roomId, position, isDrawing });
+        pendingCursorRef.current = null;
+        
+        // Clear any pending timeout
+        if (cursorTimeoutRef.current) {
+          clearTimeout(cursorTimeoutRef.current);
+          cursorTimeoutRef.current = null;
+        }
+      } else if (!cursorTimeoutRef.current) {
+        // Schedule a delayed send for the pending position
+        cursorTimeoutRef.current = setTimeout(() => {
+          if (pendingCursorRef.current) {
+            lastCursorSendRef.current = Date.now();
+            const socket = getSocket();
+            socket.emit("cursor:move", { 
+              roomId, 
+              position: pendingCursorRef.current.position, 
+              isDrawing: pendingCursorRef.current.isDrawing 
+            });
+            pendingCursorRef.current = null;
+          }
+          cursorTimeoutRef.current = null;
+        }, CURSOR_DEBOUNCE_MS - timeSinceLastSend);
+      }
     },
     [roomId]
   );
@@ -230,6 +288,14 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     (strokeId: string) => {
       const socket = getSocket();
       socket.emit("stroke:end", { strokeId, roomId });
+    },
+    [roomId]
+  );
+
+  const addShape = useCallback(
+    (shape: Shape) => {
+      const socket = getSocket();
+      socket.emit("shape:add", { shape, roomId });
     },
     [roomId]
   );
@@ -263,11 +329,17 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     }
   }, []);
 
+  const addLocalShape = useCallback((shape: Shape) => {
+    shapesRef.current.set(shape.id, shape);
+    setShapes(Array.from(shapesRef.current.values()));
+  }, []);
+
   return {
     isConnected,
     currentUser,
     users,
     strokes,
+    shapes,
     cursors,
     socket: enabled && username ? getSocket() : null,
     canUndo: operationCount > 0,
@@ -276,10 +348,12 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     startStroke,
     addStrokePoint,
     endStroke,
+    addShape,
     clearCanvas,
     undo,
     redo,
     addLocalStroke,
     updateLocalStroke,
+    addLocalShape,
   };
 }
