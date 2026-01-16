@@ -23,6 +23,12 @@ export async function registerRoutes(
     socket.on("room:join", (data: { roomId: string; username: string }) => {
       const { roomId, username } = data;
       
+      // Validate room code format (exactly 6 alphanumeric characters)
+      if (!roomManager.isValidRoomCode(roomId)) {
+        socket.emit("error", "Invalid room code. Must be exactly 6 alphanumeric characters.");
+        return;
+      }
+      
       if (currentRoomId) {
         socket.leave(currentRoomId);
         if (currentUserId) {

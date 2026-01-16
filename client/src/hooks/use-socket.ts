@@ -67,10 +67,10 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       setIsConnected(false);
     }
 
-    function onRoomJoined(joinedRoomId: string, odifyuserId: string, userName: string, color: string) {
+    function onRoomJoined(joinedRoomId: string, odifyUserId: string, userName: string, color: string) {
       if (joinedRoomId === roomId) {
         setCurrentUser({
-          id: odifyuserId,
+          id: odifyUserId,
           username: userName,
           color,
           cursorPosition: null,
