@@ -1,11 +1,10 @@
-import type { Stroke, User, Operation, Shape } from "@shared/schema";
+import type { Stroke, User, Operation } from "@shared/schema";
 import { USER_COLORS } from "@shared/schema";
 
 export interface Room {
   id: string;
   users: Map<string, User>;
   strokes: Map<string, Stroke>;
-  shapes: Map<string, Shape>;
   operationHistory: Operation[];
   undoneOperations: Operation[];
   userColorIndex: number;
@@ -21,7 +20,6 @@ class RoomManager {
         id: roomId,
         users: new Map(),
         strokes: new Map(),
-        shapes: new Map(),
         operationHistory: [],
         undoneOperations: [],
         userColorIndex: 0,
@@ -29,54 +27,6 @@ class RoomManager {
       this.rooms.set(roomId, room);
     }
     return room;
-  }
-
-  // Add a shape to the room
-  addShape(roomId: string, shape: Shape): void {
-    const room = this.rooms.get(roomId);
-    if (!room) return;
-    
-    room.shapes.set(shape.id, shape);
-    
-    room.operationHistory.push({
-      type: "draw",
-      strokeId: shape.id,
-      shape: { ...shape },
-      userId: shape.userId,
-      timestamp: Date.now(),
-    });
-    
-    room.undoneOperations = [];
-  }
-
-  getShapes(roomId: string): Shape[] {
-    const room = this.rooms.get(roomId);
-    if (!room) return [];
-    return Array.from(room.shapes.values());
-  }
-
-  deleteShape(roomId: string, shapeId: string): void {
-    const room = this.rooms.get(roomId);
-    if (!room) return;
-    room.shapes.delete(shapeId);
-  }
-
-  updateShape(roomId: string, oldShape: Shape, newShape: Shape): void {
-    const room = this.rooms.get(roomId);
-    if (!room) return;
-    
-    room.shapes.set(newShape.id, newShape);
-    
-    room.operationHistory.push({
-      type: "move",
-      strokeId: newShape.id,
-      shape: { ...newShape },
-      oldShape: { ...oldShape },
-      userId: newShape.userId,
-      timestamp: Date.now(),
-    });
-    
-    room.undoneOperations = [];
   }
 
   getRoom(roomId: string): Room | undefined {
@@ -197,7 +147,6 @@ class RoomManager {
     if (!room) return;
     
     room.strokes.clear();
-    room.shapes.clear();
     room.operationHistory = [];
     room.undoneOperations = [];
   }
@@ -210,30 +159,12 @@ class RoomManager {
     room.undoneOperations.push(lastOperation);
     
     if (lastOperation.type === "draw") {
-      // Delete stroke if present
-      if (lastOperation.strokeId && room.strokes.has(lastOperation.strokeId)) {
+      if (lastOperation.strokeId) {
         room.strokes.delete(lastOperation.strokeId);
       }
-      // Delete shape if present (shapes are stored with their id as key)
-      if (lastOperation.shape) {
-        room.shapes.delete(lastOperation.shape.id);
-      } else if (lastOperation.strokeId) {
-        // Fallback: try to delete from shapes by strokeId
-        room.shapes.delete(lastOperation.strokeId);
-      }
     } else if (lastOperation.type === "erase") {
-      // Restore erased stroke
       if (lastOperation.stroke) {
         room.strokes.set(lastOperation.stroke.id, lastOperation.stroke);
-      }
-      // Restore erased shape
-      if (lastOperation.shape) {
-        room.shapes.set(lastOperation.shape.id, lastOperation.shape);
-      }
-    } else if (lastOperation.type === "move") {
-      // Restore shape to old position
-      if (lastOperation.oldShape) {
-        room.shapes.set(lastOperation.oldShape.id, lastOperation.oldShape);
       }
     }
     
@@ -248,34 +179,18 @@ class RoomManager {
     room.operationHistory.push(operation);
     
     if (operation.type === "draw") {
-      // Restore stroke if present
       if (operation.stroke) {
         room.strokes.set(operation.stroke.id, operation.stroke);
       }
-      // Restore shape if present
-      if (operation.shape) {
-        room.shapes.set(operation.shape.id, operation.shape);
-      }
     } else if (operation.type === "erase") {
-      // Re-erase stroke
-      if (operation.strokeId && room.strokes.has(operation.strokeId)) {
+      if (operation.strokeId) {
         room.strokes.delete(operation.strokeId);
-      }
-      // Re-erase shape
-      if (operation.shape) {
-        room.shapes.delete(operation.shape.id);
-      }
-    } else if (operation.type === "move") {
-      // Re-apply the move (restore to new position)
-      if (operation.shape) {
-        room.shapes.set(operation.shape.id, operation.shape);
       }
     }
     
     return operation;
   }
 
-  // Get current history state for syncing canUndo/canRedo to clients
   getHistoryState(roomId: string): { operationCount: number; undoneCount: number } {
     const room = this.rooms.get(roomId);
     if (!room) {

@@ -1,28 +1,22 @@
-import { MousePointer2, ZoomIn, ZoomOut, RotateCcw, AlignLeft, AlignCenter, AlignRight, Trash2, Bold } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, Bold } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { DrawingTool, Shape, TextStyle } from "@shared/schema";
+import type { DrawingTool } from "@shared/schema";
 import { DRAWING_COLORS } from "@shared/schema";
 
 interface ToolSettingsBarProps {
   currentTool: DrawingTool;
   strokeWidth: number;
   currentColor: string;
-  fillColor: string;
-  textStyle: TextStyle;
   zoom: number;
-  selectedShape: Shape | null;
   onStrokeWidthChange: (width: number) => void;
   onColorChange: (color: string) => void;
-  onFillColorChange: (color: string) => void;
-  onTextStyleChange: (style: TextStyle) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
-  onDeleteSelected: () => void;
 }
 
 function ColorSwatch({ color, selected, onClick }: { color: string; selected: boolean; onClick: () => void }) {
@@ -76,18 +70,12 @@ export function ToolSettingsBar({
   currentTool,
   strokeWidth,
   currentColor,
-  fillColor,
-  textStyle,
   zoom,
-  selectedShape,
   onStrokeWidthChange,
   onColorChange,
-  onFillColorChange,
-  onTextStyleChange,
   onZoomIn,
   onZoomOut,
   onZoomReset,
-  onDeleteSelected,
 }: ToolSettingsBarProps) {
   const renderBrushSettings = () => (
     <div className="flex items-center gap-4">
@@ -118,30 +106,13 @@ export function ToolSettingsBar({
       <SizeSlider value={strokeWidth} onChange={onStrokeWidthChange} label="Stroke" min={1} max={20} />
       <div className="h-6 w-px bg-border" />
       <div className="flex items-center gap-1.5">
-        <Label className="text-xs text-muted-foreground">Stroke</Label>
-        {DRAWING_COLORS.slice(0, 5).map((color) => (
+        <Label className="text-xs text-muted-foreground">Color</Label>
+        {DRAWING_COLORS.slice(0, 6).map((color) => (
           <ColorSwatch
             key={color}
             color={color}
             selected={currentColor === color}
             onClick={() => onColorChange(color)}
-          />
-        ))}
-      </div>
-      <div className="h-6 w-px bg-border" />
-      <div className="flex items-center gap-1.5">
-        <Label className="text-xs text-muted-foreground">Fill</Label>
-        <ColorSwatch
-          color="transparent"
-          selected={fillColor === "transparent"}
-          onClick={() => onFillColorChange("transparent")}
-        />
-        {DRAWING_COLORS.slice(0, 4).map((color) => (
-          <ColorSwatch
-            key={color}
-            color={color}
-            selected={fillColor === color}
-            onClick={() => onFillColorChange(color)}
           />
         ))}
       </div>
@@ -150,81 +121,11 @@ export function ToolSettingsBar({
 
   const renderTextSettings = () => (
     <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
-        <Label className="text-xs text-muted-foreground">Size</Label>
-        <Input
-          type="number"
-          value={textStyle.fontSize || 16}
-          onChange={(e) => onTextStyleChange({ ...textStyle, fontSize: parseInt(e.target.value) || 16 })}
-          className="w-16 h-7 text-xs"
-          min={8}
-          max={72}
-        />
-      </div>
-      <div className="h-6 w-px bg-border" />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant={textStyle.fontWeight === "bold" ? "default" : "ghost"}
-            onClick={() => onTextStyleChange({ ...textStyle, fontWeight: textStyle.fontWeight === "bold" ? "normal" : "bold" })}
-            className="h-7 w-7"
-            data-testid="button-text-bold"
-          >
-            <Bold className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Bold</p></TooltipContent>
-      </Tooltip>
-      <div className="h-6 w-px bg-border" />
-      <div className="flex items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={textStyle.align === "left" ? "default" : "ghost"}
-              onClick={() => onTextStyleChange({ ...textStyle, align: "left" })}
-              className="h-7 w-7"
-              data-testid="button-text-align-left"
-            >
-              <AlignLeft className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent><p>Align Left</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={textStyle.align === "center" ? "default" : "ghost"}
-              onClick={() => onTextStyleChange({ ...textStyle, align: "center" })}
-              className="h-7 w-7"
-              data-testid="button-text-align-center"
-            >
-              <AlignCenter className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent><p>Align Center</p></TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={textStyle.align === "right" ? "default" : "ghost"}
-              onClick={() => onTextStyleChange({ ...textStyle, align: "right" })}
-              className="h-7 w-7"
-              data-testid="button-text-align-right"
-            >
-              <AlignRight className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent><p>Align Right</p></TooltipContent>
-        </Tooltip>
-      </div>
+      <SizeSlider value={strokeWidth} onChange={onStrokeWidthChange} label="Size" min={8} max={72} />
       <div className="h-6 w-px bg-border" />
       <div className="flex items-center gap-1.5">
         <Label className="text-xs text-muted-foreground">Color</Label>
-        {DRAWING_COLORS.slice(0, 5).map((color) => (
+        {DRAWING_COLORS.slice(0, 6).map((color) => (
           <ColorSwatch
             key={color}
             color={color}
@@ -233,35 +134,6 @@ export function ToolSettingsBar({
           />
         ))}
       </div>
-    </div>
-  );
-
-  const renderSelectSettings = () => (
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <MousePointer2 className="h-4 w-4" />
-        <span>{selectedShape ? `Selected: ${selectedShape.type}` : "Click to select a shape"}</span>
-      </div>
-      {selectedShape && (
-        <>
-          <div className="h-6 w-px bg-border" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onDeleteSelected}
-                className="h-7 text-destructive hover:text-destructive"
-                data-testid="button-delete-selected"
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Delete
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Delete Selected</p></TooltipContent>
-          </Tooltip>
-        </>
-      )}
     </div>
   );
 
@@ -299,7 +171,6 @@ export function ToolSettingsBar({
 
   const getToolLabel = () => {
     switch (currentTool) {
-      case "select": return "Move / Select";
       case "brush": return "Brush";
       case "eraser": return "Eraser";
       case "rectangle": return "Rectangle";
@@ -312,8 +183,6 @@ export function ToolSettingsBar({
 
   const renderToolSettings = () => {
     switch (currentTool) {
-      case "select":
-        return renderSelectSettings();
       case "brush":
         return renderBrushSettings();
       case "eraser":

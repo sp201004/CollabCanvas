@@ -1,4 +1,4 @@
-import { Brush, Eraser, Undo2, Redo2, Trash2, Square, Circle, Minus, Type, MousePointer2 } from "lucide-react";
+import { Brush, Eraser, Undo2, Redo2, Trash2, Square, Circle, Minus, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -35,25 +35,6 @@ export function ToolPanel({
 }: ToolPanelProps) {
   return (
     <div className="flex flex-col gap-2 p-2.5 bg-card border border-card-border rounded-lg" data-testid="tool-panel">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant={currentTool === "select" ? "default" : "ghost"}
-            onClick={() => onToolChange("select")}
-            className="h-9 w-9 mx-auto"
-            data-testid="button-select-tool"
-          >
-            <MousePointer2 className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">
-          <p>Select / Move (V)</p>
-        </TooltipContent>
-      </Tooltip>
-
-      <div className="w-full h-px bg-border/50" />
-
       <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">Draw</span>
       
       <div className="flex justify-center gap-1.5">

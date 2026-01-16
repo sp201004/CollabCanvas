@@ -12,7 +12,7 @@ import { ToolSettingsBar } from "@/components/tool-settings-bar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSocket } from "@/hooks/use-socket";
-import type { DrawingTool, Point, Stroke, User, CursorUpdate, Shape, TextStyle } from "@shared/schema";
+import type { DrawingTool, Point, Stroke, User, CursorUpdate } from "@shared/schema";
 
 function getRoomIdFromUrl(): string {
   const params = new URLSearchParams(window.location.search);
@@ -34,7 +34,6 @@ const emptySocketReturn = {
   currentUser: null,
   users: [] as User[],
   strokes: [] as Stroke[],
-  shapes: [] as Shape[],
   cursors: new Map<string, CursorUpdate>(),
   socket: null,
   canUndo: false,
@@ -43,15 +42,11 @@ const emptySocketReturn = {
   startStroke: () => {},
   addStrokePoint: () => {},
   endStroke: () => {},
-  addShape: () => {},
-  updateShape: () => {},
   clearCanvas: () => {},
   undo: () => {},
   redo: () => {},
   addLocalStroke: () => {},
   updateLocalStroke: () => {},
-  addLocalShape: () => {},
-  updateLocalShape: () => {},
 };
 
 export default function CanvasPage() {
@@ -63,16 +58,8 @@ export default function CanvasPage() {
   const [canvasRect, setCanvasRect] = useState<DOMRect | null>(null);
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   
-  // Zoom and pan state
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
-  
-  // Selection state
-  const [selectedShape, setSelectedShape] = useState<Shape | null>(null);
-
-  // Fill color and text style state
-  const [fillColor, setFillColor] = useState("transparent");
-  const [textStyle, setTextStyle] = useState<TextStyle>({ fontSize: 16, fontWeight: "normal", align: "left" });
   
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
@@ -89,7 +76,6 @@ export default function CanvasPage() {
     currentUser,
     users,
     strokes,
-    shapes,
     cursors,
     socket,
     canUndo,
@@ -98,37 +84,13 @@ export default function CanvasPage() {
     startStroke,
     addStrokePoint,
     endStroke,
-    addShape,
-    updateShape,
     clearCanvas,
     undo,
     redo,
     addLocalStroke,
     updateLocalStroke,
-    addLocalShape,
-    updateLocalShape,
   } = username ? socketData : emptySocketReturn;
 
-  // Sync selectedShape with shapes array - clear selection if shape no longer matches
-  useEffect(() => {
-    if (selectedShape) {
-      const shapeInArray = shapes.find(s => s.id === selectedShape.id);
-      if (!shapeInArray) {
-        // Shape was deleted
-        setSelectedShape(null);
-      } else if (
-        shapeInArray.startPoint.x !== selectedShape.startPoint.x ||
-        shapeInArray.startPoint.y !== selectedShape.startPoint.y ||
-        shapeInArray.endPoint.x !== selectedShape.endPoint.x ||
-        shapeInArray.endPoint.y !== selectedShape.endPoint.y
-      ) {
-        // Shape position changed (due to undo/redo or external update) - update selection
-        setSelectedShape(shapeInArray);
-      }
-    }
-  }, [shapes, selectedShape]);
-
-  // Redirect if invalid room
   useEffect(() => {
     if (!roomId || !isRoomValid) {
       window.location.href = "/";
@@ -165,8 +127,6 @@ export default function CanvasPage() {
         setCurrentTool("line");
       } else if (e.key === "t" || e.key === "T") {
         setCurrentTool("text");
-      } else if (e.key === "v" || e.key === "V") {
-        setCurrentTool("select");
       } else if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         undo();
@@ -213,40 +173,6 @@ export default function CanvasPage() {
     [endStroke]
   );
 
-  const handleShapeAdd = useCallback(
-    (shape: Shape) => {
-      addShape(shape);
-    },
-    [addShape]
-  );
-
-  const handleShapeUpdate = useCallback(
-    (oldShape: Shape, newShape: Shape) => {
-      updateShape(oldShape, newShape);
-    },
-    [updateShape]
-  );
-
-  const handleLocalShapeUpdate = useCallback(
-    (shape: Shape) => {
-      updateLocalShape(shape);
-    },
-    [updateLocalShape]
-  );
-
-  const handleSelectShape = useCallback(
-    (shape: Shape | null) => {
-      setSelectedShape(shape);
-    },
-    []
-  );
-
-  const handleDeleteSelected = useCallback(() => {
-    // Shape deletion would need a dedicated delete operation
-    // For now we clear selection
-    setSelectedShape(null);
-  }, []);
-
   const handleCursorMove = useCallback(
     (position: Point | null, isDrawing: boolean) => {
       sendCursorMove(position, isDrawing);
@@ -278,22 +204,15 @@ export default function CanvasPage() {
         currentTool={currentTool}
         strokeWidth={strokeWidth}
         currentColor={currentColor}
-        fillColor={fillColor}
-        textStyle={textStyle}
         zoom={zoom}
-        selectedShape={selectedShape}
         onStrokeWidthChange={setStrokeWidth}
         onColorChange={setCurrentColor}
-        onFillColorChange={setFillColor}
-        onTextStyleChange={setTextStyle}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleResetView}
-        onDeleteSelected={handleDeleteSelected}
       />
       
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left sidebar */}
         <aside className="w-[88px] p-3 flex flex-col gap-3 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
           <ToolPanel
             currentTool={currentTool}
@@ -314,7 +233,6 @@ export default function CanvasPage() {
             currentColor={currentColor}
           />
           
-          {/* Zoom controls */}
           <div className="flex flex-col gap-2 p-2.5 bg-card border border-card-border rounded-lg">
             <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">View</span>
             <div className="flex justify-center gap-1.5">
@@ -346,12 +264,10 @@ export default function CanvasPage() {
           </div>
         </aside>
 
-        {/* Main canvas area */}
         <main className="flex-1 p-3 md:p-5 lg:p-6 overflow-hidden bg-muted/30" ref={canvasContainerRef}>
           <div className="relative w-full h-full">
             <DrawingCanvas
               strokes={strokes}
-              shapes={shapes}
               currentTool={currentTool}
               currentColor={currentColor}
               strokeWidth={strokeWidth}
@@ -359,19 +275,13 @@ export default function CanvasPage() {
               onStrokeStart={handleStrokeStart}
               onStrokePoint={handleStrokePoint}
               onStrokeEnd={handleStrokeEnd}
-              onShapeAdd={handleShapeAdd}
-              onShapeUpdate={handleShapeUpdate}
               onCursorMove={handleCursorMove}
               onLocalStrokeStart={addLocalStroke}
               onLocalStrokePoint={updateLocalStroke}
-              onLocalShapeAdd={addLocalShape}
-              onLocalShapeUpdate={handleLocalShapeUpdate}
               zoom={zoom}
               pan={pan}
               onZoomChange={setZoom}
               onPanChange={setPan}
-              selectedShape={selectedShape}
-              onSelectShape={handleSelectShape}
             />
             <CursorOverlay
               cursors={cursors}
@@ -384,7 +294,6 @@ export default function CanvasPage() {
           </div>
         </main>
 
-        {/* Right sidebar */}
         <aside className="hidden md:flex w-48 lg:w-64 p-3 flex-col gap-3 bg-sidebar border-l border-sidebar-border shrink-0">
           <UserPresence
             users={users}
@@ -392,7 +301,6 @@ export default function CanvasPage() {
           />
         </aside>
 
-        {/* Mobile floating users button */}
         <button
           onClick={() => setShowUsersPanel(!showUsersPanel)}
           className="md:hidden fixed bottom-4 right-4 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg"
@@ -407,7 +315,6 @@ export default function CanvasPage() {
           )}
         </button>
 
-        {/* Mobile slide-in users panel */}
         {showUsersPanel && (
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowUsersPanel(false)}>
             <div className="absolute inset-0 bg-black/30" />

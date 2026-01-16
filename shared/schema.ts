@@ -13,8 +13,9 @@ export const strokeSchema = z.object({
   color: z.string(),
   width: z.number(),
   userId: z.string(),
-  tool: z.enum(["brush", "eraser"]),
+  tool: z.enum(["brush", "eraser", "rectangle", "circle", "line", "text"]),
   timestamp: z.number(),
+  text: z.string().optional(),
 });
 
 export type Stroke = z.infer<typeof strokeSchema>;
@@ -29,34 +30,8 @@ export const userSchema = z.object({
 
 export type User = z.infer<typeof userSchema>;
 
-export const drawingToolSchema = z.enum(["select", "brush", "eraser", "rectangle", "circle", "line", "text"]);
+export const drawingToolSchema = z.enum(["brush", "eraser", "rectangle", "circle", "line", "text"]);
 export type DrawingTool = z.infer<typeof drawingToolSchema>;
-
-// Text style for text shapes
-export const textStyleSchema = z.object({
-  fontSize: z.number().optional(),
-  fontWeight: z.enum(["normal", "bold"]).optional(),
-  align: z.enum(["left", "center", "right"]).optional(),
-});
-
-export type TextStyle = z.infer<typeof textStyleSchema>;
-
-// Shape types for rectangle, circle, line, text tools
-export const shapeSchema = z.object({
-  id: z.string(),
-  type: z.enum(["rectangle", "circle", "line", "text"]),
-  startPoint: pointSchema,
-  endPoint: pointSchema,
-  color: z.string(),
-  width: z.number(),
-  userId: z.string(),
-  timestamp: z.number(),
-  text: z.string().optional(),
-  fillColor: z.string().optional(),
-  textStyle: textStyleSchema.optional(),
-});
-
-export type Shape = z.infer<typeof shapeSchema>;
 
 export const roomSchema = z.object({
   id: z.string(),
@@ -64,11 +39,9 @@ export const roomSchema = z.object({
   users: z.array(userSchema),
   strokes: z.array(strokeSchema),
   operationHistory: z.array(z.object({
-    type: z.enum(["draw", "erase", "undo", "redo", "clear", "move"]),
+    type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
     strokeId: z.string().optional(),
     stroke: strokeSchema.optional(),
-    shape: shapeSchema.optional(),
-    oldShape: shapeSchema.optional(),
     userId: z.string(),
     timestamp: z.number(),
   })),
@@ -100,11 +73,9 @@ export const strokePointSchema = z.object({
 export type StrokePoint = z.infer<typeof strokePointSchema>;
 
 export const operationSchema = z.object({
-  type: z.enum(["draw", "erase", "undo", "redo", "clear", "move"]),
+  type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
   strokeId: z.string().optional(),
   stroke: strokeSchema.optional(),
-  shape: shapeSchema.optional(),
-  oldShape: shapeSchema.optional(),
   userId: z.string(),
   timestamp: z.number(),
 });

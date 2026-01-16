@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { roomManager } from "./rooms";
-import type { Stroke, Point, Shape } from "@shared/schema";
+import type { Stroke, Point } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -23,7 +23,6 @@ export async function registerRoutes(
     socket.on("room:join", (data: { roomId: string; username: string }) => {
       const { roomId, username } = data;
       
-      // Validate room code format (exactly 6 alphanumeric characters)
       if (!roomManager.isValidRoomCode(roomId)) {
         socket.emit("error", "Invalid room code. Must be exactly 6 alphanumeric characters.");
         return;
@@ -50,10 +49,8 @@ export async function registerRoutes(
       socket.emit("user:list", users);
       
       const strokes = roomManager.getStrokes(roomId);
-      const shapes = roomManager.getShapes(roomId);
-      socket.emit("canvas:state", { strokes, shapes });
+      socket.emit("canvas:state", { strokes });
       
-      // Send history state so client knows if undo/redo is available
       const historyState = roomManager.getHistoryState(roomId);
       socket.emit("history:state", historyState);
       
@@ -105,31 +102,6 @@ export async function registerRoutes(
       
       socket.to(currentRoomId).emit("stroke:end", { strokeId: data.strokeId, roomId: currentRoomId });
       
-      // Broadcast history state to ALL clients (including sender) so undo/redo buttons update
-      const historyState = roomManager.getHistoryState(currentRoomId);
-      io.to(currentRoomId).emit("history:state", historyState);
-    });
-
-    // Shape events for rectangle, circle, line, text tools
-    socket.on("shape:add", (data: { shape: Shape; roomId: string }) => {
-      if (!currentRoomId || data.roomId !== currentRoomId) return;
-      
-      roomManager.addShape(currentRoomId, data.shape);
-      
-      io.to(currentRoomId).emit("shape:add", { shape: data.shape, roomId: currentRoomId });
-      
-      const historyState = roomManager.getHistoryState(currentRoomId);
-      io.to(currentRoomId).emit("history:state", historyState);
-    });
-
-    // Shape update for move/transform operations
-    socket.on("shape:update", (data: { oldShape: Shape; newShape: Shape; roomId: string }) => {
-      if (!currentRoomId || data.roomId !== currentRoomId) return;
-      
-      roomManager.updateShape(currentRoomId, data.oldShape, data.newShape);
-      
-      io.to(currentRoomId).emit("shape:update", { oldShape: data.oldShape, newShape: data.newShape, roomId: currentRoomId });
-      
       const historyState = roomManager.getHistoryState(currentRoomId);
       io.to(currentRoomId).emit("history:state", historyState);
     });
@@ -140,7 +112,6 @@ export async function registerRoutes(
       roomManager.clearCanvas(currentRoomId);
       
       io.to(currentRoomId).emit("canvas:clear");
-      // Broadcast updated history state (now empty)
       const historyState = roomManager.getHistoryState(currentRoomId);
       io.to(currentRoomId).emit("history:state", historyState);
     });
@@ -151,7 +122,6 @@ export async function registerRoutes(
       const operation = roomManager.undo(currentRoomId);
       if (operation) {
         io.to(currentRoomId).emit("operation:undo", operation);
-        // Broadcast updated history state
         const historyState = roomManager.getHistoryState(currentRoomId);
         io.to(currentRoomId).emit("history:state", historyState);
       }
@@ -163,13 +133,11 @@ export async function registerRoutes(
       const operation = roomManager.redo(currentRoomId);
       if (operation) {
         io.to(currentRoomId).emit("operation:redo", operation);
-        // Broadcast updated history state
         const historyState = roomManager.getHistoryState(currentRoomId);
         io.to(currentRoomId).emit("history:state", historyState);
       }
     });
 
-    // Ping handler for latency measurement - responds immediately with callback
     socket.on("ping", (callback: () => void) => {
       if (typeof callback === "function") {
         callback();

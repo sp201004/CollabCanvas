@@ -1,0 +1,108 @@
+You are acting as a senior canvas + frontend engineer.
+
+PROJECT:
+CollabCanvas – Real-Time Collaborative Drawing Canvas
+
+DECISION (FINAL & INTENTIONAL):
+This project will use a PURE STROKE-BASED DRAWING MODEL.
+There will be NO object-based manipulation.
+
+Therefore:
+❌ Move / Select tool must be REMOVED COMPLETELY
+❌ Shapes and text must NOT exist as movable objects
+✅ Everything must behave like strokes (Paint / Whiteboard style)
+
+━━━━━━━━━━━━━━━━━━━━━━
+GOAL
+━━━━━━━━━━━━━━━━━━━━━━
+
+1. Remove Move/Select tool entirely
+2. Convert Shapes and Text to stroke-based rendering
+3. Ensure eraser works naturally and partially on:
+   - Brush strokes
+   - Shape strokes
+   - Text strokes
+4. Keep undo/redo fully functional
+5. Keep real-time sync intact
+
+━━━━━━━━━━━━━━━━━━━━━━
+STRICT RULES
+━━━━━━━━━━━━━━━━━━━━━━
+
+- DO NOT keep any object-based state for shapes or text
+- DO NOT keep selection boxes or move logic
+- DO NOT fake erase using white paint
+- DO NOT add new libraries
+- Use raw Canvas API only
+- Minimal, safe changes
+- Interview-explainable design
+
+━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY CHANGES
+━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣ REMOVE MOVE TOOL
+- Remove Move/Select tool button from toolbar
+- Remove keyboard shortcut (V)
+- Remove selection logic, bounding boxes, drag handlers
+- Remove delete-via-selection logic
+- Clean up related state variables and code paths
+
+2️⃣ SHAPES → STROKES
+- Rectangle, circle, line must be rendered as canvas paths
+- On mouseup / commit:
+  - Convert shape preview into stroke path(s)
+  - Store as stroke data (points / path commands)
+- Do NOT store shapes as objects after commit
+
+3️⃣ TEXT → STROKES
+- Text must be rendered directly onto canvas
+- After commit:
+  - Text becomes part of canvas pixels / stroke history
+  - No text object remains
+- Text cannot be selected or moved after draw
+- Undo is the only way to revert text placement
+
+4️⃣ ERASER (CRITICAL)
+- Eraser must use:
+  ctx.globalCompositeOperation = "destination-out"
+- Eraser must work uniformly on:
+  ✔ brush strokes
+  ✔ shape strokes
+  ✔ text strokes
+- No full deletion on touch
+- No hidden objects under erased pixels
+
+5️⃣ UNDO / REDO
+- Undo restores erased pixels
+- Redo re-applies erase
+- Shape/text strokes behave same as brush strokes
+
+━━━━━━━━━━━━━━━━━━━━━━
+DOCUMENTATION UPDATE
+━━━━━━━━━━━━━━━━━━━━━━
+
+Update README / ARCHITECTURE.md to state clearly:
+
+- This is a stroke-based collaborative drawing canvas
+- Shapes and text are rasterized to strokes on commit
+- Eraser is pixel-based and consistent across all draw types
+- Move/select of objects is intentionally not supported
+- Users reposition drawings via undo + redraw
+
+━━━━━━━━━━━━━━━━━━━━━━
+FINAL VALIDATION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━
+
+✔ No Move tool exists anywhere  
+✔ Shapes behave like brush strokes  
+✔ Text behaves like brush strokes  
+✔ Eraser partially erases everything  
+✔ No white overlay hacks  
+✔ No object reappears after erase  
+✔ Canvas feels like MS Paint / Whiteboard  
+✔ Architecture is simple & interview-safe  
+
+Act like a senior engineer simplifying the system
+for correctness, usability, and interview readiness.
+Proceed immediately without asking questions.
