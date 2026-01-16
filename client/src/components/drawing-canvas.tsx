@@ -728,12 +728,8 @@ export function DrawingCanvas({
               commitText();
             }
             if (e.key === "Escape") {
-              setTextInput({
-                isActive: false,
-                position: { x: 0, y: 0 },
-                screenPosition: { x: 0, y: 0 },
-                text: "",
-              });
+              e.preventDefault();
+              commitText();
             }
           }}
           onBlur={commitText}
