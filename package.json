@@ -8,7 +8,7 @@
     "install:all": "npm install && cd client && npm install && cd ..",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "dev:client": "cd client && npm run dev",
-    "start": "NODE_ENV=development tsx server/index.ts",
+    "start": "NODE_ENV=production node dist/index.cjs",
     "start:prod": "NODE_ENV=production node dist/index.cjs",
     "build": "tsx script/build.ts",
     "check": "tsc"
