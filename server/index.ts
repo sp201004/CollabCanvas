@@ -80,19 +80,50 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  // Port selection strategy:
+  // 1. Use PORT environment variable if provided
+  // 2. Try default port 5000
+  // 3. If port is in use, let OS assign a free port (port 0)
+  const preferredPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
+  
+  const startServer = (port: number) => {
+    return new Promise<void>((resolve, reject) => {
+      httpServer
+        .listen(port, "0.0.0.0")
+        .once("listening", () => {
+          const address = httpServer.address();
+          const actualPort = typeof address === "object" && address ? address.port : port;
+          log(`🚀 Server running on http://localhost:${actualPort}`);
+          log(`Frontend: http://localhost:${actualPort}`);
+          log(`Socket.IO: ws://localhost:${actualPort}/socket.io`);
+          resolve();
+        })
+        .once("error", (err: NodeJS.ErrnoException) => {
+          if (err.code === "EADDRINUSE") {
+            reject(err);
+          } else {
+            log(`Server error: ${err.message}`);
+            reject(err);
+          }
+        });
+    });
+  };
+
+  try {
+    await startServer(preferredPort);
+  } catch (err: any) {
+    if (err.code === "EADDRINUSE") {
+      log(`Port ${preferredPort} is in use, finding a free port...`);
+      try {
+        // Port 0 tells the OS to assign any available port
+        await startServer(0);
+      } catch (secondErr) {
+        log(`Failed to start server: ${secondErr}`);
+        process.exit(1);
+      }
+    } else {
+      log(`Failed to start server: ${err}`);
+      process.exit(1);
+    }
+  }
 })();

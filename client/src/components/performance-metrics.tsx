@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Activity, Wifi } from "lucide-react";
+import { Activity, Wifi, Layers } from "lucide-react";
 
 interface PerformanceMetricsProps {
   socket: any;
   isConnected: boolean;
+  strokeCount?: number;
 }
 
-export function PerformanceMetrics({ socket, isConnected }: PerformanceMetricsProps) {
+export function PerformanceMetrics({ socket, isConnected, strokeCount = 0 }: PerformanceMetricsProps) {
   const [fps, setFps] = useState(0);
   const [latency, setLatency] = useState<number | null>(null);
   const frameCountRef = useRef(0);
@@ -72,17 +73,27 @@ export function PerformanceMetrics({ socket, isConnected }: PerformanceMetricsPr
     >
       <div className="flex items-center gap-1" title="Frames per second">
         <Activity className={`h-2.5 w-2.5 ${getFpsColor()}`} />
-        <span className={getFpsColor()}>{fps}</span>
+        <span className={getFpsColor()}>{fps} FPS</span>
       </div>
       
       <div className="w-px h-2.5 bg-border/50" />
       
-      <div className="flex items-center gap-1" title="Network latency">
+      <div className="flex items-center gap-1" title="Network latency (round-trip)">
         <Wifi className={`h-2.5 w-2.5 ${getLatencyColor()}`} />
         <span className={getLatencyColor()}>
           {latency !== null ? `${latency}ms` : "--"}
         </span>
       </div>
+      
+      {strokeCount > 0 && (
+        <>
+          <div className="w-px h-2.5 bg-border/50" />
+          <div className="flex items-center gap-1" title="Active strokes on canvas">
+            <Layers className="h-2.5 w-2.5 text-muted-foreground" />
+            <span className="text-muted-foreground">{strokeCount}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

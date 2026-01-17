@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import type { Stroke, Point, User, CursorUpdate, StrokeData, StrokePoint, Operation, Shape } from "@shared/schema";
+import type { Stroke, Point, User, CursorUpdate, StrokeData, StrokePoint, Operation } from "@shared/schema";
 
 type ServerToClientEvents = {
   "user:joined": (user: User) => void;
@@ -9,14 +9,13 @@ type ServerToClientEvents = {
   "stroke:start": (data: StrokeData) => void;
   "stroke:point": (data: StrokePoint) => void;
   "stroke:end": (data: { strokeId: string; roomId: string }) => void;
-  "canvas:state": (data: { strokes: Stroke[]; shapes: Shape[] }) => void;
+  "canvas:state": (data: { strokes: Stroke[] }) => void;
+  "canvas:restored": (data: { strokeCount: number }) => void;
   "canvas:clear": () => void;
   "operation:undo": (operation: Operation) => void;
   "operation:redo": (operation: Operation) => void;
   "room:joined": (roomId: string, userId: string, username: string, color: string) => void;
   "history:state": (data: { operationCount: number; undoneCount: number }) => void;
-  "shape:add": (data: { shape: Shape; roomId: string }) => void;
-  "shape:update": (data: { oldShape: Shape; newShape: Shape; roomId: string }) => void;
   "error": (message: string) => void;
 };
 
@@ -30,15 +29,22 @@ type ClientToServerEvents = {
   "canvas:clear": (roomId: string) => void;
   "operation:undo": (roomId: string) => void;
   "operation:redo": (roomId: string) => void;
-  "shape:add": (data: { shape: Shape; roomId: string }) => void;
-  "shape:update": (data: { oldShape: Shape; newShape: Shape; roomId: string }) => void;
 };
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
+function getServerUrl(): string | undefined {
+  const raw = (import.meta as any).env?.VITE_SERVER_URL as string | undefined;
+  const cleaned = raw?.trim();
+  if (!cleaned) return undefined;
+  return cleaned.endsWith("/") ? cleaned.slice(0, -1) : cleaned;
+}
+
 export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
   if (!socket) {
-    socket = io({
+    const serverUrl = getServerUrl();
+
+    socket = io(serverUrl ?? window.location.origin, {
       path: "/socket.io",
       transports: ["websocket", "polling"],
     });

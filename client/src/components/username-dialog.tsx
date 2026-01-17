@@ -53,6 +53,8 @@ export function UsernameDialog({ open, onSubmit }: UsernameDialogProps) {
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Input
+              id="username-input"
+              name="username"
               placeholder="Enter your username..."
               value={username}
               onChange={(e) => {

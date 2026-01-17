@@ -7,7 +7,6 @@ interface CursorOverlayProps {
   currentUserId: string | null;
   canvasRect: DOMRect | null;
   zoom?: number;
-  pan?: { x: number; y: number };
 }
 
 export function CursorOverlay({
@@ -16,7 +15,6 @@ export function CursorOverlay({
   currentUserId,
   canvasRect,
   zoom = 1,
-  pan = { x: 0, y: 0 },
 }: CursorOverlayProps) {
   const visibleCursors = useMemo(() => {
     const result: Array<{
@@ -56,8 +54,8 @@ export function CursorOverlay({
       data-testid="cursor-overlay"
     >
       {visibleCursors.map((cursor) => {
-        const screenX = cursor.x * zoom + pan.x;
-        const screenY = cursor.y * zoom + pan.y;
+        const screenX = cursor.x * zoom;
+        const screenY = cursor.y * zoom;
 
         return (
           <div

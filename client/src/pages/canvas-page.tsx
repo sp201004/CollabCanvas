@@ -1,17 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Users, ZoomIn, ZoomOut, Move } from "lucide-react";
+import { Users } from "lucide-react";
 import { DrawingCanvas } from "@/components/drawing-canvas";
 import { ToolPanel } from "@/components/tool-panel";
-import { ColorPicker } from "@/components/color-picker";
-import { StrokeWidthSelector } from "@/components/stroke-width-selector";
 import { UserPresence } from "@/components/user-presence";
 import { CursorOverlay } from "@/components/cursor-overlay";
 import { RoomHeader } from "@/components/room-header";
 import { UsernameDialog } from "@/components/username-dialog";
 import { ToolSettingsBar } from "@/components/tool-settings-bar";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSocket } from "@/hooks/use-socket";
+import { exportCanvasToJSON, importCanvasFromJSON } from "@/lib/persistence";
+import { useToast } from "@/hooks/use-toast";
 import type { DrawingTool, Point, Stroke, User, CursorUpdate } from "@shared/schema";
 
 function getRoomIdFromUrl(): string {
@@ -19,6 +17,9 @@ function getRoomIdFromUrl(): string {
   return params.get("room") || "";
 }
 
+// Room codes are exactly 6 uppercase alphanumeric characters
+// This prevents injection attacks and keeps URLs clean and shareable
+// Example valid codes: ABC123, X9Y2Z1, ROOM01
 const ROOM_CODE_REGEX = /^[A-Z0-9]{6}$/;
 
 function isValidRoomCode(code: string): boolean {
@@ -29,8 +30,13 @@ function getStoredUsername(): string | null {
   return sessionStorage.getItem("canvas_username");
 }
 
+// Fallback object when socket is not initialized yet
+// Prevents null pointer errors during initial render
+// All functions are no-ops until real socket connection established
 const emptySocketReturn = {
   isConnected: false,
+  isLoading: false,
+  isReconnecting: false,
   currentUser: null,
   users: [] as User[],
   strokes: [] as Stroke[],
@@ -50,6 +56,7 @@ const emptySocketReturn = {
 };
 
 export default function CanvasPage() {
+  const { toast } = useToast();
   const [username, setUsername] = useState<string | null>(() => getStoredUsername());
   const [roomId, setRoomId] = useState<string>(() => getRoomIdFromUrl());
   const [currentTool, setCurrentTool] = useState<DrawingTool>("brush");
@@ -59,9 +66,9 @@ export default function CanvasPage() {
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const isRoomValid = isValidRoomCode(roomId);
 
@@ -73,6 +80,8 @@ export default function CanvasPage() {
 
   const {
     isConnected,
+    isLoading,
+    isReconnecting,
     currentUser,
     users,
     strokes,
@@ -109,43 +118,69 @@ export default function CanvasPage() {
     return () => window.removeEventListener("resize", updateRect);
   }, []);
 
+  // Keyboard shortcuts for tool selection
+  const toolKeyMap: Record<string, DrawingTool> = {
+    'b': 'brush', 'B': 'brush',
+    'e': 'eraser', 'E': 'eraser',
+    'r': 'rectangle', 'R': 'rectangle',
+    'c': 'circle', 'C': 'circle',
+    'l': 'line', 'L': 'line',
+    't': 'text', 'T': 'text',
+  };
+
+  const isUndoShortcut = (e: KeyboardEvent): boolean => {
+    return (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
+  };
+
+  const isRedoShortcut = (e: KeyboardEvent): boolean => {
+    const key = e.key.toLowerCase();
+    return (e.ctrlKey || e.metaKey) && (key === 'y' || (e.shiftKey && key === 'z'));
+  };
+
+  const handleZoomShortcut = (key: string): void => {
+    if (key === '+' || key === '=') {
+      setZoom(z => Math.min(5, z * 1.1));
+    } else if (key === '-') {
+      setZoom(z => Math.max(0.1, z * 0.9));
+    } else if (key === '0') {
+      setZoom(1);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keyboard shortcuts when typing in input fields
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
-      if (e.key === "b" || e.key === "B") {
-        setCurrentTool("brush");
-      } else if (e.key === "e" || e.key === "E") {
-        setCurrentTool("eraser");
-      } else if (e.key === "r" || e.key === "R") {
-        setCurrentTool("rectangle");
-      } else if (e.key === "c" || e.key === "C") {
-        setCurrentTool("circle");
-      } else if (e.key === "l" || e.key === "L") {
-        setCurrentTool("line");
-      } else if (e.key === "t" || e.key === "T") {
-        setCurrentTool("text");
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+      // Tool selection shortcuts (B, E, R, C, L, T)
+      if (e.key in toolKeyMap) {
+        setCurrentTool(toolKeyMap[e.key]);
+        return;
+      }
+
+      // Undo shortcut (Ctrl/Cmd + Z)
+      if (isUndoShortcut(e)) {
         e.preventDefault();
         undo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "z"))) {
+        return;
+      }
+
+      // Redo shortcut (Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z)
+      if (isRedoShortcut(e)) {
         e.preventDefault();
         redo();
-      } else if (e.key === "+" || e.key === "=") {
-        setZoom(z => Math.min(5, z * 1.1));
-      } else if (e.key === "-") {
-        setZoom(z => Math.max(0.1, z * 0.9));
-      } else if (e.key === "0") {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
+        return;
       }
+
+      // Zoom shortcuts (+, -, 0)
+      handleZoomShortcut(e.key);
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, setCurrentTool, setZoom]);
 
   const handleUsernameSubmit = useCallback((name: string) => {
     sessionStorage.setItem("canvas_username", name);
@@ -190,16 +225,110 @@ export default function CanvasPage() {
 
   const handleResetView = useCallback(() => {
     setZoom(1);
-    setPan({ x: 0, y: 0 });
   }, []);
+
+  const handleToolChange = useCallback((tool: DrawingTool) => {
+    setCurrentTool(tool);
+  }, []);
+
+  const handleExportCanvas = useCallback(() => {
+    try {
+      const json = exportCanvasToJSON(roomId, strokes);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `canvas-${roomId}-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Canvas Exported",
+        description: "Your drawing has been saved as a JSON file.",
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export canvas. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [roomId, strokes, toast]);
+
+  const handleImportCanvas = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = event.target?.result as string;
+        const imported = importCanvasFromJSON(json);
+
+        if (!imported) {
+          throw new Error("Invalid canvas file");
+        }
+
+        // Clear existing canvas and wait for it to complete
+        clearCanvas();
+
+        // Use requestAnimationFrame to ensure canvas is cleared before adding strokes
+        requestAnimationFrame(() => {
+          // Add all imported strokes
+          for (const stroke of imported.strokes) {
+            addLocalStroke(stroke);
+            startStroke(stroke);
+            endStroke(stroke.id);
+          }
+
+          toast({
+            title: "Canvas Imported",
+            description: `Loaded ${imported.strokes.length} drawing${imported.strokes.length !== 1 ? 's' : ''}.`,
+          });
+        });
+      } catch (error) {
+        console.error("Import failed:", error);
+        toast({
+          title: "Import Failed",
+          description: "Invalid canvas file format. Please select a valid JSON export.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+
+    if (e.target) e.target.value = '';
+  }, [clearCanvas, addLocalStroke, startStroke, endStroke, toast]);
 
   if (!username) {
     return <UsernameDialog open={true} onSubmit={handleUsernameSubmit} />;
   }
 
+  // Show loading state while joining room and fetching canvas state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <RoomHeader roomId={roomId} isConnected={isConnected} isReconnecting={isReconnecting} socket={socket} strokeCount={strokes.length} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="space-y-1">
+              <p className="text-lg font-medium text-foreground">Loading canvas...</p>
+              <p className="text-sm text-muted-foreground">Syncing with room {roomId}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background" data-testid="canvas-page">
-      <RoomHeader roomId={roomId} isConnected={isConnected} socket={socket} />
+      {/* Room header with integrated performance metrics (FPS, latency, stroke count) */}
+      <RoomHeader roomId={roomId} isConnected={isConnected} isReconnecting={isReconnecting} socket={socket} strokeCount={strokes.length} />
       <ToolSettingsBar
         currentTool={currentTool}
         strokeWidth={strokeWidth}
@@ -210,58 +339,30 @@ export default function CanvasPage() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleResetView}
+        onZoomChange={setZoom}
+        onExport={handleExportCanvas}
+        onImport={() => importInputRef.current?.click()}
+      />
+      
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleImportCanvas}
+        className="hidden"
       />
       
       <div className="flex flex-1 overflow-hidden relative">
         <aside className="w-[88px] p-3 flex flex-col gap-3 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
           <ToolPanel
             currentTool={currentTool}
-            onToolChange={setCurrentTool}
+            onToolChange={handleToolChange}
             onUndo={undo}
             onRedo={redo}
             onClear={clearCanvas}
             canUndo={canUndo}
             canRedo={canRedo}
           />
-          <ColorPicker
-            currentColor={currentColor}
-            onColorChange={setCurrentColor}
-          />
-          <StrokeWidthSelector
-            currentWidth={strokeWidth}
-            onWidthChange={setStrokeWidth}
-            currentColor={currentColor}
-          />
-          
-          <div className="flex flex-col gap-2 p-2.5 bg-card border border-card-border rounded-lg">
-            <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider text-center">View</span>
-            <div className="flex justify-center gap-1.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={handleZoomIn} className="h-8 w-8" data-testid="button-zoom-in">
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right"><p>Zoom In (+)</p></TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" onClick={handleZoomOut} className="h-8 w-8" data-testid="button-zoom-out">
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right"><p>Zoom Out (-)</p></TooltipContent>
-              </Tooltip>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" onClick={handleResetView} className="text-xs h-7" data-testid="button-reset-view">
-                  <Move className="h-3 w-3 mr-1" /> Reset (0)
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right"><p>Reset View</p></TooltipContent>
-            </Tooltip>
-          </div>
         </aside>
 
         <main className="flex-1 p-3 md:p-5 lg:p-6 overflow-hidden bg-muted/30" ref={canvasContainerRef}>
@@ -279,9 +380,7 @@ export default function CanvasPage() {
               onLocalStrokeStart={addLocalStroke}
               onLocalStrokePoint={updateLocalStroke}
               zoom={zoom}
-              pan={pan}
               onZoomChange={setZoom}
-              onPanChange={setPan}
             />
             <CursorOverlay
               cursors={cursors}
@@ -289,7 +388,6 @@ export default function CanvasPage() {
               currentUserId={currentUser?.id || null}
               canvasRect={canvasRect}
               zoom={zoom}
-              pan={pan}
             />
           </div>
         </main>

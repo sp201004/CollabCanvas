@@ -99,8 +99,8 @@ export default function LandingPage() {
     >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Brush className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 overflow-hidden">
+            <img src="/favicon.png" alt="CollabCanvas Logo" className="h-full w-full object-cover" />
           </div>
           <CardTitle className="text-2xl">CollabCanvas</CardTitle>
           <CardDescription>
