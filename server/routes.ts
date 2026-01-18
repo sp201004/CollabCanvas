@@ -270,14 +270,14 @@ function handleCanvasRestore(
   return () => {
     if (!isValidRoomRequest(state, data.roomId)) return;
 
-    // Validation: Check stroke count limit to prevent flooding/DoS
+    // Limit stroke count to prevent DoS
     const MAX_STROKES = 10000;
     if (!Array.isArray(data.strokes) || data.strokes.length > MAX_STROKES) {
       socket.emit("error", `Invalid stroke import: Exceeds limit of ${MAX_STROKES} strokes.`);
       return;
     }
 
-    // Validation: Verify stroke shape and ownership
+    // Validate structure and types
     for (const stroke of data.strokes) {
       if (typeof stroke.id !== 'string' || typeof stroke.userId !== 'string') {
         socket.emit("error", "Invalid stroke data: ID and UserID must be strings.");
@@ -289,10 +289,6 @@ function handleCanvasRestore(
         return;
       }
 
-      // Check points structure - limit iteration if needed for performance, 
-      // but "for..of" on reasonable stroke sizes is fine. 
-      // User asked for "strict" so we check all points.
-      // Can add max points per stroke check here.
       if (stroke.points.length > 20000) { // Safety cap
         socket.emit("error", "Invalid stroke: Too many points in a single stroke.");
         return;

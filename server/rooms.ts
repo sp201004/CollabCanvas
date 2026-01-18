@@ -219,13 +219,42 @@ class RoomManager {
 
     room.strokes.set(stroke.id, stroke);
 
-    room.operationHistory.push({
-      type: stroke.tool === "eraser" ? "erase" : "draw",
-      strokeId: stroke.id,
-      stroke: { ...stroke },
-      userId: stroke.userId,
-      timestamp: Date.now(),
-    });
+    // Group strokes if same user/tool/gesture
+    const lastOp = room.operationHistory[room.operationHistory.length - 1];
+    const shouldGroup =
+      stroke.groupId &&
+      lastOp &&
+      lastOp.userId === stroke.userId &&
+      lastOp.type === (stroke.tool === "eraser" ? "erase" : "draw") &&
+      (lastOp.strokes?.[0]?.groupId === stroke.groupId);
+
+    if (shouldGroup) {
+      if (!lastOp.strokeIds) lastOp.strokeIds = [];
+      if (!lastOp.strokes) lastOp.strokes = [];
+
+      // Migrate legacy fields
+      if (lastOp.strokeId && !lastOp.strokeIds.includes(lastOp.strokeId)) {
+        lastOp.strokeIds.push(lastOp.strokeId);
+      }
+      if (lastOp.stroke && !lastOp.strokes.some(s => s.id === lastOp.stroke!.id)) {
+        lastOp.strokes.push(lastOp.stroke);
+      }
+
+      lastOp.strokeIds.push(stroke.id);
+      lastOp.strokes.push({ ...stroke });
+      lastOp.timestamp = Date.now();
+    } else {
+      // New operation
+      room.operationHistory.push({
+        type: stroke.tool === "eraser" ? "erase" : "draw",
+        strokeId: stroke.id,
+        stroke: { ...stroke },
+        strokeIds: [stroke.id],
+        strokes: [{ ...stroke }],
+        userId: stroke.userId,
+        timestamp: Date.now(),
+      });
+    }
 
     room.undoneOperations = [];
 

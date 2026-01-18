@@ -229,13 +229,13 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       const idsToDelete = operation.strokeIds || (operation.strokeId ? [operation.strokeId] : []);
 
       if (operation.type === "draw") {
-        // Undo draw = Delete
+        // Undo draw
         idsToDelete.forEach((id: string) => {
           strokesRef.current.delete(id);
         });
         setStrokes(Array.from(strokesRef.current.values()));
       } else if (operation.type === "erase") {
-        // Undo erase (masking) = Delete masking strokes (white lines)
+        // Undo erase
         idsToDelete.forEach((id: string) => {
           strokesRef.current.delete(id);
         });
@@ -251,13 +251,13 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       const strokesToRestore = operation.strokes || (operation.stroke ? [operation.stroke] : []);
 
       if (operation.type === "draw") {
-        // Redo draw = Restore
+        // Redo draw
         strokesToRestore.forEach((stroke: Stroke) => {
           strokesRef.current.set(stroke.id, stroke);
         });
         setStrokes(Array.from(strokesRef.current.values()));
       } else if (operation.type === "erase") {
-        // Redo erase (masking) = Restore masking strokes
+        // Redo erase
         strokesToRestore.forEach((stroke: Stroke) => {
           strokesRef.current.set(stroke.id, stroke);
         });
@@ -323,13 +323,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     };
   }, [roomId, username, enabled, toast]);
 
-  /**
-   * Sends cursor position update with 35ms debouncing.
-   * Reduces socket traffic by ~60% while maintaining smooth appearance.
-   * Always sends the final cursor position (prevents "stuck" cursors).
-   * @param position - Current cursor coordinates or null if outside canvas
-   * @param isDrawing - Whether user is actively drawing
-   */
+
   const sendCursorMove = useCallback(
     (position: Point | null, isDrawing: boolean) => {
       try {
