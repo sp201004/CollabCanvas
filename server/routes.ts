@@ -270,6 +270,47 @@ function handleCanvasRestore(
   return () => {
     if (!isValidRoomRequest(state, data.roomId)) return;
 
+    // Validation: Check stroke count limit to prevent flooding/DoS
+    const MAX_STROKES = 10000;
+    if (!Array.isArray(data.strokes) || data.strokes.length > MAX_STROKES) {
+      socket.emit("error", `Invalid stroke import: Exceeds limit of ${MAX_STROKES} strokes.`);
+      return;
+    }
+
+    // Validation: Verify stroke shape and ownership
+    for (const stroke of data.strokes) {
+      if (typeof stroke.id !== 'string' || typeof stroke.userId !== 'string') {
+        socket.emit("error", "Invalid stroke data: ID and UserID must be strings.");
+        return;
+      }
+
+      if (!Array.isArray(stroke.points)) {
+        socket.emit("error", "Invalid stroke data: Points must be an array.");
+        return;
+      }
+
+      // Check points structure - limit iteration if needed for performance, 
+      // but "for..of" on reasonable stroke sizes is fine. 
+      // User asked for "strict" so we check all points.
+      // Can add max points per stroke check here.
+      if (stroke.points.length > 20000) { // Safety cap
+        socket.emit("error", "Invalid stroke: Too many points in a single stroke.");
+        return;
+      }
+
+      for (const point of stroke.points) {
+        if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+          socket.emit("error", "Invalid stroke point: Coordinates must be finite numbers.");
+          return;
+        }
+      }
+
+      if (typeof stroke.width !== 'number' || stroke.width <= 0) {
+        socket.emit("error", "Invalid stroke data: Width must be a positive number.");
+        return;
+      }
+    }
+
     roomManager.restoreCanvas(state.currentRoomId!, data.strokes);
 
     // Broadcast full state update to ALL clients (including sender) to ensure consistency

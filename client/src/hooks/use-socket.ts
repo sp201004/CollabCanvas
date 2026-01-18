@@ -227,7 +227,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
 
     function onOperationUndo(operation: Operation) {
       const idsToDelete = operation.strokeIds || (operation.strokeId ? [operation.strokeId] : []);
-      const strokesToRestore = operation.strokes || (operation.stroke ? [operation.stroke] : []);
 
       if (operation.type === "draw") {
         // Undo draw = Delete
