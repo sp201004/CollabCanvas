@@ -17,6 +17,14 @@ export function CursorOverlay({
   zoom = 1,
 }: CursorOverlayProps) {
   const visibleCursors = useMemo(() => {
+    console.log('[CURSOR OVERLAY DEBUG]', {
+      cursorsSize: cursors.size,
+      cursorsKeys: Array.from(cursors.keys()),
+      usersCount: users.length,
+      userIds: users.map(u => u.id),
+      currentUserId
+    });
+    
     const result: Array<{
       socketUserId: string;
       username: string;
@@ -27,10 +35,14 @@ export function CursorOverlay({
     }> = [];
 
     cursors.forEach((cursor, socketUserId) => {
+      console.log('[CURSOR PROCESSING]', { socketUserId, isOwn: socketUserId === currentUserId, hasPosition: !!cursor.position });
+      
       if (socketUserId === currentUserId) return;
       if (!cursor.position) return;
 
       const user = users.find((u) => u.id === socketUserId);
+      console.log('[USER LOOKUP]', { socketUserId, userFound: !!user, user });
+      
       if (!user) return;
 
       result.push({
@@ -43,6 +55,7 @@ export function CursorOverlay({
       });
     });
 
+    console.log('[VISIBLE CURSORS]', result);
     return result;
   }, [cursors, users, currentUserId]);
 

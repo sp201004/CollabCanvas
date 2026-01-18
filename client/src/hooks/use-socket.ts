@@ -156,9 +156,11 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     }
 
     function onCursorUpdate(update: CursorUpdate) {
+      console.log('[CURSOR UPDATE RECEIVED]', update);
       setCursors((prev) => {
         const next = new Map(prev);
         next.set(update.userId, update);
+        console.log('[CURSORS MAP]', { size: next.size, keys: Array.from(next.keys()), values: Array.from(next.values()) });
         return next;
       });
     }
