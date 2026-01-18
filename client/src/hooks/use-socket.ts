@@ -139,10 +139,12 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     }
 
     function onUserList(userList: User[]) {
+      console.log('[USER LIST RECEIVED]', { userList, currentUserId: currentUser?.id });
       setUsers(userList);
     }
 
     function onUserJoined(user: User) {
+      console.log('[USER JOINED]', { user, currentUserId: currentUser?.id });
       setUsers((prev) => [...prev.filter((u) => u.id !== user.id), user]);
     }
 
@@ -327,12 +329,22 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
         const now = Date.now();
         const timeSinceLastSend = now - lastCursorSendRef.current;
         
+        console.log('[SEND CURSOR] Attempting to send', { 
+          roomId, 
+          position, 
+          isDrawing, 
+          currentUserId: currentUser?.id,
+          isConnected,
+          timeSinceLastSend 
+        });
+        
         // Queue cursor update (ensures final position is always sent)
         pendingCursorRef.current = { position, isDrawing };
         
         if (timeSinceLastSend >= CURSOR_DEBOUNCE_MS) {
           lastCursorSendRef.current = now;
           const socket = getSocket();
+          console.log('[SEND CURSOR] Emitting cursor:move', { roomId, position, isDrawing, socketConnected: socket.connected });
           socket.emit("cursor:move", { roomId, position, isDrawing });
           pendingCursorRef.current = null;
           
