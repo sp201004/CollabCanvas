@@ -303,7 +303,7 @@ export function ToolSettingsBar({
   );
 
   const renderZoomSettings = () => (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 md:gap-2">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button size="icon" variant="ghost" onClick={onZoomOut} className="h-7 w-7" data-testid="button-zoom-out-bar">
@@ -324,7 +324,7 @@ export function ToolSettingsBar({
             onChange={handleZoomInputChange}
             onBlur={handleZoomInputBlur}
             onKeyDown={handleZoomKeyDown}
-            className={`w-12 h-7 text-xs text-center ${isZoomInvalid ? 'border-red-500 border-2' : ''}`}
+            className={`w-10 md:w-12 h-7 text-xs text-center ${isZoomInvalid ? 'border-red-500 border-2' : ''}`}
             aria-label="Zoom percentage"
           />
           {isZoomInvalid && (
@@ -343,12 +343,12 @@ export function ToolSettingsBar({
         </TooltipTrigger>
         <TooltipContent><p>Zoom In</p></TooltipContent>
       </Tooltip>
-      <div className="h-6 w-px bg-border" />
+      <div className="h-6 w-px bg-border hidden md:block" />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button size="sm" variant="ghost" onClick={onZoomReset} className="h-7" data-testid="button-zoom-reset-bar">
-            <RotateCcw className="h-3.5 w-3.5 mr-1" />
-            Reset
+            <RotateCcw className="h-3.5 w-3.5 md:mr-1" />
+            <span className="hidden md:inline">Reset</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent><p>Reset View</p></TooltipContent>
@@ -387,48 +387,57 @@ export function ToolSettingsBar({
 
   return (
     <div 
-      className="flex items-center gap-4 px-4 py-2 bg-card border-b border-border min-h-[48px]"
+      className="flex flex-wrap items-center gap-2 md:gap-4 px-2 md:px-4 py-2 bg-card border-b border-border min-h-[48px]"
       data-testid="tool-settings-bar"
     >
-      <span className="text-sm font-medium text-foreground min-w-[80px]">{getToolLabel()}</span>
-      <div className="h-6 w-px bg-border" />
-      <div className="flex-1 flex items-center gap-4 overflow-x-auto">
+      {/* Tool Name - ATOMIC GROUP */}
+      <div className="inline-flex items-center gap-2 md:gap-4 flex-shrink-0 flex-grow-0">
+        <span className="text-sm font-medium text-foreground whitespace-nowrap">{getToolLabel()}</span>
+        <div className="h-6 w-px bg-border hidden md:block" />
+      </div>
+      
+      {/* Tool Settings - Size and Color - ATOMIC GROUP */}
+      <div className="inline-flex items-center gap-2 md:gap-4 md:flex-grow flex-shrink-0">
         {renderToolSettings()}
       </div>
-      <div className="h-6 w-px bg-border" />
       
-      {/* Export/Import */}
-      {(onExport || onImport) && (
-        <>
-          <div className="flex items-center gap-1">
-            {onExport && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="sm" variant="ghost" onClick={onExport} className="h-7" data-testid="button-export">
-                    <Download className="h-3.5 w-3.5 mr-1" />
-                    Export
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Export Canvas as JSON</p></TooltipContent>
-              </Tooltip>
-            )}
-            {onImport && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="sm" variant="ghost" onClick={onImport} className="h-7" data-testid="button-import">
-                    <Upload className="h-3.5 w-3.5 mr-1" />
-                    Import
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Import Canvas from JSON</p></TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-          <div className="h-6 w-px bg-border" />
-        </>
-      )}
-      
-      {renderZoomSettings()}
+      {/* Right side controls - ATOMIC GROUP */}
+      <div className="inline-flex items-center gap-2 md:gap-4 flex-shrink-0 flex-grow-0 ml-auto">
+        <div className="h-6 w-px bg-border hidden md:block" />
+        
+        {/* Export/Import */}
+        {(onExport || onImport) && (
+          <>
+            <div className="flex items-center gap-1">
+              {onExport && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" variant="ghost" onClick={onExport} className="h-7" data-testid="button-export">
+                      <Download className="h-3.5 w-3.5 md:mr-1" />
+                      <span className="hidden md:inline">Export</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Export Canvas as JSON</p></TooltipContent>
+                </Tooltip>
+              )}
+              {onImport && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" variant="ghost" onClick={onImport} className="h-7" data-testid="button-import">
+                      <Upload className="h-3.5 w-3.5 md:mr-1" />
+                      <span className="hidden md:inline">Import</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Import Canvas from JSON</p></TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <div className="h-6 w-px bg-border hidden md:block" />
+          </>
+        )}
+        
+        {renderZoomSettings()}
+      </div>
     </div>
   );
 }

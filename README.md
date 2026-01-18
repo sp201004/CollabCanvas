@@ -217,7 +217,10 @@ cd client && npm install && npm run dev
 ### Production Build
 
 ```bash
+# Build the application
 npm run build
+
+# Run the production build
 npm run start:prod
 ```
 

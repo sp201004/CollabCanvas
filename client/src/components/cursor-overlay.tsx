@@ -43,6 +43,11 @@ export function CursorOverlay({
       });
     });
 
+    // Debug logging
+    if (result.length > 0) {
+      console.log('[CursorOverlay] Visible cursors:', result.length, result);
+    }
+
     return result;
   }, [cursors, users, currentUserId]);
 
@@ -50,7 +55,7 @@ export function CursorOverlay({
 
   return (
     <div 
-      className="absolute inset-0 pointer-events-none overflow-hidden"
+      className="absolute inset-0 pointer-events-none overflow-visible z-50"
       data-testid="cursor-overlay"
     >
       {visibleCursors.map((cursor) => {
@@ -63,6 +68,7 @@ export function CursorOverlay({
             className="absolute transition-transform duration-75 ease-out"
             style={{
               transform: `translate(${screenX}px, ${screenY}px)`,
+              willChange: 'transform',
             }}
           >
             <div
