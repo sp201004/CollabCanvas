@@ -43,11 +43,6 @@ export function CursorOverlay({
       });
     });
 
-    // Debug logging
-    if (result.length > 0) {
-      console.log('[CursorOverlay] Visible cursors:', result.length, result);
-    }
-
     return result;
   }, [cursors, users, currentUserId]);
 
