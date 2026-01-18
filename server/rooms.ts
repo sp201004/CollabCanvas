@@ -367,12 +367,14 @@ class RoomManager {
     room.undoneOperations.push(lastOperation);
 
     if (lastOperation.type === "draw") {
-      if (lastOperation.strokeId) {
-        room.strokes.delete(lastOperation.strokeId);
+      const idsToRemove = lastOperation.strokeIds || (lastOperation.strokeId ? [lastOperation.strokeId] : []);
+      for (const id of idsToRemove) {
+        room.strokes.delete(id);
       }
     } else if (lastOperation.type === "erase") {
-      if (lastOperation.stroke) {
-        room.strokes.set(lastOperation.stroke.id, lastOperation.stroke);
+      const strokesToRestore = lastOperation.strokes || (lastOperation.stroke ? [lastOperation.stroke] : []);
+      for (const stroke of strokesToRestore) {
+        room.strokes.set(stroke.id, stroke);
       }
     }
 
@@ -390,12 +392,14 @@ class RoomManager {
     room.operationHistory.push(operation);
 
     if (operation.type === "draw") {
-      if (operation.stroke) {
-        room.strokes.set(operation.stroke.id, operation.stroke);
+      const strokesToRestore = operation.strokes || (operation.stroke ? [operation.stroke] : []);
+      for (const stroke of strokesToRestore) {
+        room.strokes.set(stroke.id, stroke);
       }
     } else if (operation.type === "erase") {
-      if (operation.strokeId) {
-        room.strokes.delete(operation.strokeId);
+      const idsToRemove = operation.strokeIds || (operation.strokeId ? [operation.strokeId] : []);
+      for (const id of idsToRemove) {
+        room.strokes.delete(id);
       }
     }
 
