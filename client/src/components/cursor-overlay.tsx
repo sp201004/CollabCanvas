@@ -17,14 +17,6 @@ export function CursorOverlay({
   zoom = 1,
 }: CursorOverlayProps) {
   const visibleCursors = useMemo(() => {
-    console.log('[CURSOR OVERLAY DEBUG]', {
-      cursorsSize: cursors.size,
-      cursorsKeys: Array.from(cursors.keys()),
-      usersCount: users.length,
-      userIds: users.map(u => u.id),
-      currentUserId
-    });
-    
     const result: Array<{
       socketUserId: string;
       username: string;
@@ -35,27 +27,29 @@ export function CursorOverlay({
     }> = [];
 
     cursors.forEach((cursor, socketUserId) => {
-      console.log('[CURSOR PROCESSING]', { socketUserId, isOwn: socketUserId === currentUserId, hasPosition: !!cursor.position });
-      
+      // Skip own cursor
       if (socketUserId === currentUserId) return;
+      // Skip if no position
       if (!cursor.position) return;
 
+      // Find user in users list
       const user = users.find((u) => u.id === socketUserId);
-      console.log('[USER LOOKUP]', { socketUserId, userFound: !!user, user });
       
-      if (!user) return;
+      // CRITICAL FIX: Render cursor even if user not found in list
+      // This handles race conditions where cursor arrives before user:list update
+      const username = user?.username || 'User';
+      const color = user?.color || '#6366F1'; // Default indigo color
 
       result.push({
         socketUserId,
-        username: user.username,
-        color: user.color,
+        username,
+        color,
         x: cursor.position.x,
         y: cursor.position.y,
         isDrawing: cursor.isDrawing,
       });
     });
 
-    console.log('[VISIBLE CURSORS]', result);
     return result;
   }, [cursors, users, currentUserId]);
 
