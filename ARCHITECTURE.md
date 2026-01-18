@@ -586,7 +586,7 @@ Socket.io chosen for **developer productivity** and **production reliability** o
 
 ## System Architecture
 
-![System Architecture](/diagrams/system/1_system_architecture.svg)
+![System Architecture](/diagrams/system/1_system_architecture.png)
 
 ## Error Handling & Connection Management
 
@@ -615,27 +615,27 @@ The application tracks three distinct connection states:
 
 ### 1. Drawing Stroke Flow (Brush/Eraser)
 
-![Drawing Stroke Flow](/diagrams/realtime/2_drawing_stroke_flow.svg)
+![Drawing Stroke Flow](/diagrams/realtime/2_drawing_stroke_flow.png)
 
 ### 2. Shape Creation Flow (Rectangle/Circle/Line/Text)
 
-![Shape Creation Flow](/diagrams/realtime/3_shape_creation_flow.svg)
+![Shape Creation Flow](/diagrams/realtime/3_shape_creation_flow.png)
 
 ### 3. Undo/Redo Operation Flow
 
-![Undo/Redo Flow](/diagrams/collaboration/4_undo_redo_flow.svg)
+![Undo/Redo Flow](/diagrams/collaboration/4_undo_redo_flow.png)
 
 ### 4. Room Join & Canvas Synchronization Flow
 
-![Room Join & Synchronization Flow](/diagrams/collaboration/5_room_join_sync_flow.svg)
+![Room Join & Synchronization Flow](/diagrams/collaboration/5_room_join_sync_flow.png)
 
 ### 5. Cursor Movement & Presence Flow
 
-![Cursor Presence Flow](/diagrams/realtime/6_cursor_presence_flow.svg)
+![Cursor Presence Flow](/diagrams/realtime/6_cursor_presence_flow.png)
 
 ### 6. Pan & Zoom Transform Flow
 
-![Pan & Zoom Flow](/diagrams/realtime/7_pan_zoom_flow.svg)
+![Pan & Zoom Flow](/diagrams/realtime/7_pan_zoom_flow.png)
 
 ## WebSocket Protocol
 
@@ -718,7 +718,7 @@ The `history:state` event syncs undo/redo button states across all clients:
 
 CollabCanvas implements a **dual-layer persistence strategy** with client-side localStorage as backup and server-side file storage as the source of truth.
 
-![Drawing Persistence](/diagrams/persistence/8_drawing_persistence.svg)
+![Drawing Persistence](/diagrams/persistence/8_drawing_persistence.png)
 
 ### Data Structure
 
@@ -1246,7 +1246,7 @@ const LIMITS = {
 
 ### Architecture for 1000 Concurrent Users
 
-![Architecture for 1000 Users](/diagrams/system/9_architecture_1000_users.svg)
+![Architecture for 1000 Users](/diagrams/system/9_architecture_1000_users.png)
 
 **Estimated Costs for 1000 Users:**
 - 3x Node.js servers (2 vCPU, 4GB): ~$120/month
