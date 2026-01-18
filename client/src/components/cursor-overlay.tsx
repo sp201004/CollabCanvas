@@ -16,16 +16,6 @@ export function CursorOverlay({
   canvasRect,
   zoom = 1,
 }: CursorOverlayProps) {
-  console.log('[CURSOR DEBUG] CursorOverlay render', { 
-    cursorsSize: cursors.size, 
-    cursorsData: Array.from(cursors.entries()),
-    usersCount: users.length, 
-    users,
-    currentUserId, 
-    canvasRect,
-    zoom 
-  });
-  
   const visibleCursors = useMemo(() => {
     const result: Array<{
       socketUserId: string;
@@ -37,19 +27,11 @@ export function CursorOverlay({
     }> = [];
 
     cursors.forEach((cursor, socketUserId) => {
-      console.log('[CURSOR DEBUG] Processing cursor:', { socketUserId, cursor, currentUserId, isOwnCursor: socketUserId === currentUserId });
-      
       if (socketUserId === currentUserId) return;
-      if (!cursor.position) {
-        console.log('[CURSOR DEBUG] Skipping cursor - no position');
-        return;
-      }
+      if (!cursor.position) return;
 
       const user = users.find((u) => u.id === socketUserId);
-      if (!user) {
-        console.log('[CURSOR DEBUG] Skipping cursor - user not found in users list');
-        return;
-      }
+      if (!user) return;
 
       result.push({
         socketUserId,
@@ -61,7 +43,6 @@ export function CursorOverlay({
       });
     });
 
-    console.log('[CURSOR DEBUG] Visible cursors result:', result);
     return result;
   }, [cursors, users, currentUserId]);
 

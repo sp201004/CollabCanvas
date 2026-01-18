@@ -98,20 +98,8 @@ function handleCursorMove(
   data: { roomId: string; position: Point | null; isDrawing: boolean }
 ) {
   return () => {
-    console.log('[CURSOR DEBUG SERVER] Received cursor:move', { 
-      socketId: socket.id,
-      roomId: data.roomId, 
-      position: data.position, 
-      isDrawing: data.isDrawing,
-      authenticated: isUserAuthenticated(state),
-      validRoom: isValidRoomRequest(state, data.roomId),
-      currentRoomId: state.currentRoomId,
-      currentUserId: state.currentUserId
-    });
-    
     // Validate user authentication and room
     if (!isUserAuthenticated(state) || !isValidRoomRequest(state, data.roomId)) {
-      console.log('[CURSOR DEBUG SERVER] Cursor move rejected - authentication or room validation failed');
       return;
     }
     
@@ -126,14 +114,11 @@ function handleCursorMove(
     
     roomManager.updateUserCursor(identifier, cursor);
     
-    const broadcastData = {
+    socket.to(state.currentRoomId!).emit("cursor:update", {
       userId: state.currentUserId,
       position: data.position,
       isDrawing: data.isDrawing,
-    };
-    
-    console.log('[CURSOR DEBUG SERVER] Broadcasting cursor:update to room', { room: state.currentRoomId, data: broadcastData });
-    socket.to(state.currentRoomId!).emit("cursor:update", broadcastData);
+    });
   };
 }
 

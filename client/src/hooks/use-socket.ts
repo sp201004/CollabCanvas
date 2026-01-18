@@ -156,11 +156,9 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     }
 
     function onCursorUpdate(update: CursorUpdate) {
-      console.log('[CURSOR DEBUG] Received cursor:update', update, 'Current user:', currentUser?.id);
       setCursors((prev) => {
         const next = new Map(prev);
         next.set(update.userId, update);
-        console.log('[CURSOR DEBUG] Cursors map updated, total cursors:', next.size, Array.from(next.entries()));
         return next;
       });
     }
@@ -333,7 +331,6 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
         if (timeSinceLastSend >= CURSOR_DEBOUNCE_MS) {
           lastCursorSendRef.current = now;
           const socket = getSocket();
-          console.log('[CURSOR DEBUG] Sending cursor:move', { roomId, position, isDrawing, userId: currentUser?.id });
           socket.emit("cursor:move", { roomId, position, isDrawing });
           pendingCursorRef.current = null;
           
