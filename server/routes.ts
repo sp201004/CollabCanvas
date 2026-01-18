@@ -30,12 +30,12 @@ function handleRoomJoin(
 ) {
   return async () => {
     const { roomId, username } = data;
-    
+
     if (!roomManager.isValidRoomCode(roomId)) {
       socket.emit("error", "Invalid room code. Must be exactly 6 alphanumeric characters.");
       return;
     }
-    
+
     // Leave previous room if exists
     if (state.currentRoomId) {
       socket.leave(state.currentRoomId);
@@ -50,31 +50,31 @@ function handleRoomJoin(
     state.currentUserId = socket.id as SocketUserId;
 
     socket.join(roomId);
-    
+
     // Load or create room (with persistence)
     const room = await roomManager.getOrCreateRoom(roomId as RoomId);
-    
+
     const user = roomManager.addUserToRoom(
       roomId as RoomId,
       socket.id as SocketUserId,
       username
     );
-    
+
     // Send initial state to joining user
     socket.emit("room:joined", roomId, user.id, user.username, user.color);
     socket.emit("user:list", roomManager.getUsersInRoom(roomId as RoomId));
-    
+
     const strokes = roomManager.getStrokes(roomId as RoomId);
     socket.emit("canvas:state", { strokes });
-    
+
     // Notify client if state was restored from disk
     if (room.restoredFromDisk && strokes.length > 0) {
       socket.emit("canvas:restored", { strokeCount: strokes.length });
     }
-    
+
     const historyState = roomManager.getHistoryState(roomId as RoomId);
     socket.emit("history:state", historyState);
-    
+
     // Notify other users
     socket.to(roomId).emit("user:joined", user);
   };
@@ -102,7 +102,7 @@ function handleCursorMove(
     if (!isUserAuthenticated(state) || !isValidRoomRequest(state, data.roomId)) {
       return;
     }
-    
+
     const identifier: UserIdentifier = {
       roomId: state.currentRoomId!,
       socketUserId: state.currentUserId!,
@@ -111,9 +111,9 @@ function handleCursorMove(
       position: data.position as RoomPoint | null,
       isDrawing: data.isDrawing,
     };
-    
+
     roomManager.updateUserCursor(identifier, cursor);
-    
+
     socket.to(state.currentRoomId!).emit("cursor:update", {
       userId: state.currentUserId,
       position: data.position,
@@ -129,15 +129,15 @@ function handleStrokeStart(
 ) {
   return () => {
     if (!state.currentRoomId || data.roomId !== state.currentRoomId) return;
-    
+
     // Validate stroke ownership to prevent spoofing
     if (data.stroke.userId !== state.currentUserId) {
       console.warn(`[Security] User ${state.currentUserId} attempted to create stroke with spoofed userId ${data.stroke.userId}`);
       return;
     }
-    
+
     roomManager.addStroke(state.currentRoomId, data.stroke);
-    
+
     socket.to(state.currentRoomId).emit("stroke:start", {
       stroke: data.stroke,
       roomId: state.currentRoomId,
@@ -152,7 +152,7 @@ function handleStrokePoint(
 ) {
   return () => {
     if (!state.currentRoomId || data.roomId !== state.currentRoomId) return;
-    
+
     // Validate stroke ownership to prevent malicious modifications
     const stroke = roomManager.getStroke(
       state.currentRoomId,
@@ -162,13 +162,13 @@ function handleStrokePoint(
       console.warn(`[Security] User ${state.currentUserId} attempted to modify stroke ${data.strokeId} owned by ${stroke?.userId}`);
       return;
     }
-    
+
     roomManager.updateStroke(
       state.currentRoomId,
       data.strokeId as StrokeId,
       data.point as RoomPoint
     );
-    
+
     socket.to(state.currentRoomId).emit("stroke:point", {
       strokeId: data.strokeId,
       point: data.point,
@@ -185,21 +185,21 @@ function handleStrokeEnd(
 ) {
   return () => {
     if (!isValidRoomRequest(state, data.roomId)) return;
-    
+
     // Verify stroke ownership before finalizing
     const stroke = roomManager.getStroke(state.currentRoomId!, data.strokeId as StrokeId);
     if (!stroke || stroke.userId !== state.currentUserId) {
       console.warn(`Unauthorized stroke finalization attempt by user ${state.currentUserId} for stroke ${data.strokeId}`);
       return;
     }
-    
+
     roomManager.finalizeStroke(state.currentRoomId!, data.strokeId as StrokeId);
-    
+
     socket.to(state.currentRoomId!).emit("stroke:end", {
       strokeId: data.strokeId,
       roomId: state.currentRoomId,
     });
-    
+
     broadcastHistoryState(io, state.currentRoomId!);
   };
 }
@@ -215,13 +215,13 @@ interface RoomOperationConfig<T = void> {
 function createRoomOperationHandler<T = void>(config: RoomOperationConfig<T>) {
   return () => {
     if (!isValidRoomRequest(config.state, config.roomId)) return;
-    
+
     const result = config.operation(config.state.currentRoomId!);
-    
+
     if (config.onSuccess) {
       config.onSuccess(config.io, config.state.currentRoomId!, result);
     }
-    
+
     broadcastHistoryState(config.io, config.state.currentRoomId!);
   };
 }
@@ -278,9 +278,9 @@ function handleHistoryOperation(
       eventName: "operation:redo" as const
     }
   };
-  
+
   const { execute, eventName } = operations[operationType];
-  
+
   return createHistoryOperationHandler(
     io,
     state,

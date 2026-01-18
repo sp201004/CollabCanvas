@@ -44,15 +44,15 @@ const emptySocketReturn = {
   socket: null,
   canUndo: false,
   canRedo: false,
-  sendCursorMove: () => {},
-  startStroke: () => {},
-  addStrokePoint: () => {},
-  endStroke: () => {},
-  clearCanvas: () => {},
-  undo: () => {},
-  redo: () => {},
-  addLocalStroke: () => {},
-  updateLocalStroke: () => {},
+  sendCursorMove: () => { },
+  startStroke: () => { },
+  addStrokePoint: () => { },
+  endStroke: () => { },
+  clearCanvas: () => { },
+  undo: () => { },
+  redo: () => { },
+  addLocalStroke: () => { },
+  updateLocalStroke: () => { },
 };
 
 export default function CanvasPage() {
@@ -64,9 +64,9 @@ export default function CanvasPage() {
   const [strokeWidth, setStrokeWidth] = useState(5);
   const [canvasRect, setCanvasRect] = useState<DOMRect | null>(null);
   const [showUsersPanel, setShowUsersPanel] = useState(false);
-  
+
   const [zoom, setZoom] = useState(1);
-  
+
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,6 +108,9 @@ export default function CanvasPage() {
 
   useEffect(() => {
     const updateRect = () => {
+      // Don't attempt to measure if loading/not mounted
+      if (isLoading) return;
+
       if (canvasContainerRef.current) {
         setCanvasRect(canvasContainerRef.current.getBoundingClientRect());
       }
@@ -116,7 +119,7 @@ export default function CanvasPage() {
     updateRect();
     window.addEventListener("resize", updateRect);
     return () => window.removeEventListener("resize", updateRect);
-  }, []);
+  }, [isLoading]);
 
   // Keyboard shortcuts for tool selection
   const toolKeyMap: Record<string, DrawingTool> = {
@@ -343,7 +346,7 @@ export default function CanvasPage() {
         onExport={handleExportCanvas}
         onImport={() => importInputRef.current?.click()}
       />
-      
+
       <input
         ref={importInputRef}
         type="file"
@@ -351,7 +354,7 @@ export default function CanvasPage() {
         onChange={handleImportCanvas}
         className="hidden"
       />
-      
+
       <div className="flex flex-1 overflow-hidden relative">
         <aside className="w-[88px] p-3 flex flex-col gap-3 bg-sidebar border-r border-sidebar-border overflow-y-auto shrink-0">
           <ToolPanel
@@ -416,7 +419,7 @@ export default function CanvasPage() {
         {showUsersPanel && (
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowUsersPanel(false)}>
             <div className="absolute inset-0 bg-black/30" />
-            <aside 
+            <aside
               className="absolute right-0 top-0 bottom-0 w-64 p-3 bg-sidebar border-l border-sidebar-border shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >

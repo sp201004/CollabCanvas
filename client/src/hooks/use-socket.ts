@@ -44,19 +44,19 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  
+
   // strokes array for React re-renders, strokesRef Map for O(1) lookups
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [cursors, setCursors] = useState<Map<string, CursorUpdate>>(new Map());
-  
+
   const [operationCount, setOperationCount] = useState(0);
   const [undoneCount, setUndoneCount] = useState(0);
-  
+
   const strokesRef = useRef<Map<string, Stroke>>(new Map());
-  
+
   const reconnectAttemptsRef = useRef(0);
   const hasShownReconnectSuccessRef = useRef(false);
-  
+
   const lastCursorSendRef = useRef<number>(0);
   const pendingCursorRef = useRef<{ position: Point | null; isDrawing: boolean } | null>(null);
   const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,7 +71,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     function onConnect() {
       setIsConnected(true);
       setIsReconnecting(false);
-      
+
       // Show reconnection success toast (only after a disconnect)
       if (hasShownReconnectSuccessRef.current && reconnectAttemptsRef.current > 0) {
         toast({
@@ -79,9 +79,9 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
           description: "You're back online and synced with the canvas.",
         });
       }
-      
+
       reconnectAttemptsRef.current = 0;
-      
+
       try {
         socket.emit("room:join", { roomId, username });
       } catch (error) {
@@ -104,7 +104,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       console.warn("Socket connection error:", error.message);
       setIsConnected(false);
       reconnectAttemptsRef.current++;
-      
+
       // Show error after multiple failed attempts
       if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
         setIsReconnecting(false);
@@ -169,7 +169,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       setOperationCount(data.strokes.length);
       setUndoneCount(0);
       setIsLoading(false); // Canvas state loaded, stop loading
-      
+
       // Save to localStorage
       saveCanvasState(roomId, data.strokes);
     }
@@ -207,7 +207,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     function onStrokeEnd(data: { strokeId: string; roomId: string }) {
       if (data.roomId === roomId) {
         setStrokes(Array.from(strokesRef.current.values()));
-        
+
         // Auto-save to localStorage
         saveCanvasState(roomId, Array.from(strokesRef.current.values()));
       }
@@ -218,7 +218,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       setStrokes([]);
       setOperationCount(0);
       setUndoneCount(0);
-      
+
       // Save cleared state
       saveCanvasState(roomId, []);
     }
@@ -235,7 +235,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
           setStrokes(Array.from(strokesRef.current.values()));
         }
       }
-      
+
       // Save after undo
       saveCanvasState(roomId, Array.from(strokesRef.current.values()));
     }
@@ -252,7 +252,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
           setStrokes(Array.from(strokesRef.current.values()));
         }
       }
-      
+
       // Save after redo
       saveCanvasState(roomId, Array.from(strokesRef.current.values()));
     }
@@ -299,13 +299,13 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       socket.off("canvas:clear", onCanvasClear);
       socket.off("operation:undo", onOperationUndo);
       socket.off("operation:redo", onOperationRedo);
-      
+
       try {
         socket.emit("room:leave", roomId);
       } catch (error) {
         console.error("Error leaving room:", error);
       }
-      
+
       if (cursorTimeoutRef.current) {
         clearTimeout(cursorTimeoutRef.current);
       }
@@ -324,16 +324,16 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       try {
         const now = Date.now();
         const timeSinceLastSend = now - lastCursorSendRef.current;
-        
+
         // Queue cursor update (ensures final position is always sent)
         pendingCursorRef.current = { position, isDrawing };
-        
+
         if (timeSinceLastSend >= CURSOR_DEBOUNCE_MS) {
           lastCursorSendRef.current = now;
           const socket = getSocket();
           socket.emit("cursor:move", { roomId, position, isDrawing });
           pendingCursorRef.current = null;
-          
+
           if (cursorTimeoutRef.current) {
             clearTimeout(cursorTimeoutRef.current);
             cursorTimeoutRef.current = null;
@@ -343,10 +343,10 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
             if (pendingCursorRef.current) {
               lastCursorSendRef.current = Date.now();
               const socket = getSocket();
-              socket.emit("cursor:move", { 
-                roomId, 
-                position: pendingCursorRef.current.position, 
-                isDrawing: pendingCursorRef.current.isDrawing 
+              socket.emit("cursor:move", {
+                roomId,
+                position: pendingCursorRef.current.position,
+                isDrawing: pendingCursorRef.current.isDrawing
               });
               pendingCursorRef.current = null;
             }
