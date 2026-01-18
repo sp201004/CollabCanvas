@@ -27,6 +27,7 @@ type ClientToServerEvents = {
   "stroke:point": (data: StrokePoint) => void;
   "stroke:end": (data: { strokeId: string; roomId: string }) => void;
   "canvas:clear": (roomId: string) => void;
+  "canvas:restore": (data: { roomId: string; strokes: Stroke[] }) => void;
   "operation:undo": (roomId: string) => void;
   "operation:redo": (roomId: string) => void;
 };

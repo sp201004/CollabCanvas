@@ -261,6 +261,30 @@ function handleCanvasClear(
   });
 }
 
+function handleCanvasRestore(
+  socket: Socket,
+  io: SocketIOServer,
+  state: SocketState,
+  data: { roomId: string; strokes: Stroke[] }
+) {
+  return () => {
+    if (!isValidRoomRequest(state, data.roomId)) return;
+
+    roomManager.restoreCanvas(state.currentRoomId!, data.strokes);
+
+    // Broadcast full state update to ALL clients (including sender) to ensure consistency
+    const strokes = roomManager.getStrokes(state.currentRoomId!);
+    io.to(state.currentRoomId!).emit("canvas:state", { strokes });
+
+    // Notify about restoration
+    io.to(state.currentRoomId!).emit("canvas:restored", {
+      strokeCount: strokes.length
+    });
+
+    broadcastHistoryState(io, state.currentRoomId!);
+  };
+}
+
 function handleHistoryOperation(
   socket: Socket,
   io: SocketIOServer,
@@ -344,6 +368,10 @@ export async function registerRoutes(
 
     socket.on("canvas:clear", (roomId) => {
       handleCanvasClear(socket, io, state, roomId)();
+    });
+
+    socket.on("canvas:restore", (data) => {
+      handleCanvasRestore(socket, io, state, data)();
     });
 
     socket.on("operation:undo", (roomId) => {

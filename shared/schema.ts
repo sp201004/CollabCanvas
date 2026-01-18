@@ -16,6 +16,7 @@ export const strokeSchema = z.object({
   tool: z.enum(["brush", "eraser", "rectangle", "circle", "line", "text"]),
   timestamp: z.number(),
   text: z.string().optional(),
+  groupId: z.string().optional(),
 });
 
 export type Stroke = z.infer<typeof strokeSchema>;
@@ -42,6 +43,8 @@ export const roomSchema = z.object({
     type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
     strokeId: z.string().optional(),
     stroke: strokeSchema.optional(),
+    strokeIds: z.array(z.string()).optional(),
+    strokes: z.array(strokeSchema).optional(),
     userId: z.string(),
     timestamp: z.number(),
   })),
@@ -60,6 +63,7 @@ export type CursorUpdate = z.infer<typeof cursorUpdateSchema>;
 export const strokeDataSchema = z.object({
   stroke: strokeSchema,
   roomId: z.string(),
+  groupId: z.string().optional(),
 });
 
 export type StrokeData = z.infer<typeof strokeDataSchema>;
@@ -76,6 +80,8 @@ export const operationSchema = z.object({
   type: z.enum(["draw", "erase", "undo", "redo", "clear"]),
   strokeId: z.string().optional(),
   stroke: strokeSchema.optional(),
+  strokeIds: z.array(z.string()).optional(),
+  strokes: z.array(strokeSchema).optional(),
   userId: z.string(),
   timestamp: z.number(),
 });
@@ -83,27 +89,27 @@ export const operationSchema = z.object({
 export type Operation = z.infer<typeof operationSchema>;
 
 export const USER_COLORS = [
-  "#EF4444", 
-  "#F97316", 
-  "#EAB308", 
-  "#22C55E", 
-  "#06B6D4", 
-  "#3B82F6", 
-  "#8B5CF6", 
-  "#EC4899", 
-  "#14B8A6", 
-  "#F43F5E", 
+  "#EF4444",
+  "#F97316",
+  "#EAB308",
+  "#22C55E",
+  "#06B6D4",
+  "#3B82F6",
+  "#8B5CF6",
+  "#EC4899",
+  "#14B8A6",
+  "#F43F5E",
 ];
 
 export const DRAWING_COLORS = [
-  "#1F2937", 
-  "#EF4444", 
-  "#F97316", 
-  "#EAB308", 
-  "#22C55E", 
-  "#3B82F6", 
-  "#8B5CF6", 
-  "#EC4899", 
+  "#1F2937",
+  "#EF4444",
+  "#F97316",
+  "#EAB308",
+  "#22C55E",
+  "#3B82F6",
+  "#8B5CF6",
+  "#EC4899",
 ];
 
 export const STROKE_WIDTHS = [2, 5, 10, 20];

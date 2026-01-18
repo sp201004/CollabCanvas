@@ -23,6 +23,7 @@ interface DrawingCanvasProps {
   onLocalStrokePoint: (strokeId: string, point: Point) => void;
   zoom: number;
   onZoomChange: (zoom: number) => void;
+  operationCount: number;
 }
 
 function generateStrokeId(): string {
@@ -64,21 +65,22 @@ export function DrawingCanvas({
   onLocalStrokePoint,
   zoom,
   onZoomChange,
+  operationCount,
 }: DrawingCanvasProps) {
   // Two canvases: static for completed strokes, dynamic for active drawing (60fps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const staticCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const [isDrawing, setIsDrawing] = useState(false);
   const currentStrokeRef = useRef<string | null>(null);
   const lastPointRef = useRef<Point | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  
+
   // Shape preview during drag
   const [shapeStart, setShapeStart] = useState<Point | null>(null);
   const [previewPoints, setPreviewPoints] = useState<Point[] | null>(null);
-  
+
   const [textInput, setTextInput] = useState<TextInputState>({
     isActive: false,
     position: { x: 0, y: 0 },
@@ -86,7 +88,7 @@ export function DrawingCanvas({
     text: "",
   });
   const textInputRef = useRef<HTMLTextAreaElement>(null);
-  
+
   const [cursorScreenPos, setCursorScreenPos] = useState<{ x: number; y: number } | null>(null);
 
   const isShapeTool = currentTool === "rectangle" || currentTool === "circle" || currentTool === "line";
@@ -152,17 +154,17 @@ export function DrawingCanvas({
 
   const renderText = useCallback((ctx: CanvasRenderingContext2D, stroke: Stroke) => {
     if (!stroke.text) return;
-    
+
     ctx.globalCompositeOperation = "source-over";
     const point = stroke.points[0];
     const fontSize = stroke.width * 4;
     const lineHeight = fontSize * 1.2;
-    
+
     ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = stroke.color;
     ctx.textBaseline = "top";
     ctx.textAlign = "left";
-    
+
     // Handle multiline text - split by newlines and render each line
     const lines = stroke.text.split('\n');
     lines.forEach((line, index) => {
@@ -172,7 +174,7 @@ export function DrawingCanvas({
 
   const renderFreehand = useCallback((ctx: CanvasRenderingContext2D, stroke: Stroke) => {
     const points = stroke.points;
-    
+
     // Single point: render as circle
     if (points.length === 1) {
       ctx.beginPath();
@@ -180,7 +182,7 @@ export function DrawingCanvas({
       ctx.fill();
       return;
     }
-    
+
     // Two points: render as straight line
     if (points.length === 2) {
       ctx.beginPath();
@@ -270,7 +272,7 @@ export function DrawingCanvas({
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const dpr = window.devicePixelRatio || 1;
-    
+
     // Apply zoom transform (no pan)
     ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, 0, 0);
 
@@ -343,9 +345,10 @@ export function DrawingCanvas({
   }, [zoom, currentTool, previewPoints, isShapeTool, currentColor, strokeWidth]);
 
   // Redraw static canvas only when strokes or zoom change
+  // Also redraw on operation count change (undo/redo functionality)
   useEffect(() => {
     redrawStaticCanvas();
-  }, [redrawStaticCanvas]);
+  }, [redrawStaticCanvas, operationCount]);
 
   // Redraw dynamic canvas when UI overlays need updating
   useEffect(() => {
@@ -380,18 +383,18 @@ export function DrawingCanvas({
       resizeTimer = setTimeout(() => {
         const dpr = window.devicePixelRatio || 1;
         const rect = container.getBoundingClientRect();
-        
+
         // Update canvas dimensions
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         canvas.style.width = `${rect.width}px`;
         canvas.style.height = `${rect.height}px`;
-        
+
         staticCanvas.width = rect.width * dpr;
         staticCanvas.height = rect.height * dpr;
         staticCanvas.style.width = `${rect.width}px`;
         staticCanvas.style.height = `${rect.height}px`;
-        
+
         // Use requestAnimationFrame to ensure canvas is ready before redrawing
         requestAnimationFrame(() => {
           redrawStaticCanvas();
@@ -419,7 +422,7 @@ export function DrawingCanvas({
 
     const handleWheelNative = (e: WheelEvent) => {
       e.preventDefault();
-      
+
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
 
@@ -482,7 +485,7 @@ export function DrawingCanvas({
     // Calculate required dimensions based on content
     const lines = textarea.value.split("\n");
     const lineCount = Math.max(1, lines.length);
-    
+
     // Set height based on number of lines
     const fontSize = strokeWidth * 4 * zoom;
     const lineHeight = fontSize * 1.2;
@@ -502,7 +505,7 @@ export function DrawingCanvas({
     (point: Point, zoom: number) => {
       const screenX = point.x * zoom;
       const screenY = point.y * zoom;
-      
+
       setTextInput({
         isActive: true,
         position: point,
@@ -523,6 +526,9 @@ export function DrawingCanvas({
     [onCursorMove]
   );
 
+  // Track gesture/stroke grouping
+  const currentGestureIdRef = useRef<string | null>(null);
+
   const startBrushStroke = useCallback(
     (point: Point) => {
       const strokeId = generateStrokeId();
@@ -538,6 +544,8 @@ export function DrawingCanvas({
         userId,
         tool: currentTool === "eraser" ? "eraser" : "brush",
         timestamp: Date.now(),
+        // Attach current gesture ID to group strokes from the same action
+        groupId: currentGestureIdRef.current || undefined,
       };
 
       onLocalStrokeStart(newStroke);
@@ -550,6 +558,10 @@ export function DrawingCanvas({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
+
+      // Start a new gesture group
+      currentGestureIdRef.current = nanoid();
+
       const canvas = canvasRef.current;
       const container = containerRef.current;
       if (!canvas || !container) return;
@@ -723,12 +735,13 @@ export function DrawingCanvas({
   const handlePointerLeave = useCallback(() => {
     setCursorScreenPos(null);
     onCursorMove(null, false);
+    currentGestureIdRef.current = null;
   }, [onCursorMove]);
 
   const cursorSize = strokeWidth * zoom;
   const minCursorSize = 4;
   const displayCursorSize = Math.max(cursorSize, minCursorSize);
-  
+
   // Update cursor based on what's being hovered
   let canvasCursor = "crosshair";
   if (isBrushOrEraser) {
@@ -738,8 +751,8 @@ export function DrawingCanvas({
   }
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="w-full h-full rounded-lg shadow-lg overflow-hidden bg-white relative"
       data-testid="canvas-container"
     >
@@ -753,7 +766,7 @@ export function DrawingCanvas({
       <canvas
         ref={canvasRef}
         className="absolute inset-0"
-        style={{ 
+        style={{
           cursor: canvasCursor,
           touchAction: 'none', // Prevent default touch behaviors (zoom, scroll)
           WebkitTouchCallout: 'none', // Disable iOS callout
@@ -765,7 +778,7 @@ export function DrawingCanvas({
         onPointerLeave={handlePointerLeave}
         data-testid="drawing-canvas"
       />
-      
+
       {showCustomCursor && cursorScreenPos && (
         <div
           className="pointer-events-none absolute rounded-full"
@@ -776,18 +789,18 @@ export function DrawingCanvas({
             height: displayCursorSize,
             ...(currentTool === "brush"
               ? {
-                  backgroundColor: currentColor,
-                  opacity: 0.5,
-                }
+                backgroundColor: currentColor,
+                opacity: 0.5,
+              }
               : {
-                  backgroundColor: "transparent",
-                  border: "2px dashed rgba(100, 100, 100, 0.8)",
-                }),
+                backgroundColor: "transparent",
+                border: "2px dashed rgba(100, 100, 100, 0.8)",
+              }),
           }}
           data-testid="custom-cursor"
         />
       )}
-      
+
       {textInput.isActive && (
         <textarea
           ref={textInputRef}
@@ -824,7 +837,7 @@ export function DrawingCanvas({
           rows={1}
         />
       )}
-      
+
       <div className="absolute bottom-2 right-2 bg-background/80 px-2 py-1 rounded text-xs text-muted-foreground" data-testid="zoom-indicator">
         {Math.round(zoom * 100)}%
       </div>

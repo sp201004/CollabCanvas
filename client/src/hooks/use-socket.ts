@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { getSocket, disconnectSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
 import { saveCanvasState } from "@/lib/persistence";
-import type { Stroke, Point, User, CursorUpdate } from "@shared/schema";
+import type { Stroke, Point, User, CursorUpdate, Operation } from "@shared/schema";
 
 interface UseSocketOptions {
   roomId: string;
@@ -30,6 +30,8 @@ interface UseSocketReturn {
   redo: () => void;
   addLocalStroke: (stroke: Stroke) => void;
   updateLocalStroke: (strokeId: string, point: Point) => void;
+  restoreCanvas: (strokes: Stroke[]) => void;
+  operationCount: number;
 }
 
 // 35ms debounce reduces cursor traffic by ~60%
@@ -223,34 +225,44 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
       saveCanvasState(roomId, []);
     }
 
-    function onOperationUndo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
+    function onOperationUndo(operation: Operation) {
+      const idsToDelete = operation.strokeIds || (operation.strokeId ? [operation.strokeId] : []);
+      const strokesToRestore = operation.strokes || (operation.stroke ? [operation.stroke] : []);
+
       if (operation.type === "draw") {
-        if (operation.strokeId) {
-          strokesRef.current.delete(operation.strokeId);
-          setStrokes(Array.from(strokesRef.current.values()));
-        }
+        // Undo draw = Delete
+        idsToDelete.forEach((id: string) => {
+          strokesRef.current.delete(id);
+        });
+        setStrokes(Array.from(strokesRef.current.values()));
       } else if (operation.type === "erase") {
-        if (operation.stroke) {
-          strokesRef.current.set(operation.stroke.id, operation.stroke);
-          setStrokes(Array.from(strokesRef.current.values()));
-        }
+        // Undo erase (masking) = Delete masking strokes (white lines)
+        idsToDelete.forEach((id: string) => {
+          strokesRef.current.delete(id);
+        });
+        setStrokes(Array.from(strokesRef.current.values()));
       }
 
       // Save after undo
       saveCanvasState(roomId, Array.from(strokesRef.current.values()));
     }
 
-    function onOperationRedo(operation: { type: string; strokeId?: string; stroke?: Stroke }) {
+    function onOperationRedo(operation: Operation) {
+      const idsToDelete = operation.strokeIds || (operation.strokeId ? [operation.strokeId] : []);
+      const strokesToRestore = operation.strokes || (operation.stroke ? [operation.stroke] : []);
+
       if (operation.type === "draw") {
-        if (operation.stroke) {
-          strokesRef.current.set(operation.stroke.id, operation.stroke);
-          setStrokes(Array.from(strokesRef.current.values()));
-        }
+        // Redo draw = Restore
+        strokesToRestore.forEach((stroke: Stroke) => {
+          strokesRef.current.set(stroke.id, stroke);
+        });
+        setStrokes(Array.from(strokesRef.current.values()));
       } else if (operation.type === "erase") {
-        if (operation.strokeId) {
-          strokesRef.current.delete(operation.strokeId);
-          setStrokes(Array.from(strokesRef.current.values()));
-        }
+        // Redo erase (masking) = Restore masking strokes
+        strokesToRestore.forEach((stroke: Stroke) => {
+          strokesRef.current.set(stroke.id, stroke);
+        });
+        setStrokes(Array.from(strokesRef.current.values()));
       }
 
       // Save after redo
@@ -437,6 +449,15 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     }
   }, []);
 
+  const restoreCanvas = useCallback((strokes: Stroke[]) => {
+    try {
+      const socket = getSocket();
+      socket.emit("canvas:restore", { roomId, strokes });
+    } catch (error) {
+      console.error("Error restoring canvas:", error);
+    }
+  }, [roomId]);
+
   return {
     isConnected,
     isLoading,
@@ -457,5 +478,7 @@ export function useSocket({ roomId, username, enabled = true }: UseSocketOptions
     redo,
     addLocalStroke,
     updateLocalStroke,
+    restoreCanvas,
+    operationCount,
   };
 }

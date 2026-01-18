@@ -53,6 +53,8 @@ const emptySocketReturn = {
   redo: () => { },
   addLocalStroke: () => { },
   updateLocalStroke: () => { },
+  restoreCanvas: () => { },
+  operationCount: 0,
 };
 
 export default function CanvasPage() {
@@ -98,6 +100,8 @@ export default function CanvasPage() {
     redo,
     addLocalStroke,
     updateLocalStroke,
+    restoreCanvas,
+    operationCount,
   } = username ? socketData : emptySocketReturn;
 
   useEffect(() => {
@@ -275,23 +279,10 @@ export default function CanvasPage() {
           throw new Error("Invalid canvas file");
         }
 
-        // Clear existing canvas and wait for it to complete
-        clearCanvas();
+        // Use atomic server-side restore
+        restoreCanvas(imported.strokes);
 
-        // Use requestAnimationFrame to ensure canvas is cleared before adding strokes
-        requestAnimationFrame(() => {
-          // Add all imported strokes
-          for (const stroke of imported.strokes) {
-            addLocalStroke(stroke);
-            startStroke(stroke);
-            endStroke(stroke.id);
-          }
-
-          toast({
-            title: "Canvas Imported",
-            description: `Loaded ${imported.strokes.length} drawing${imported.strokes.length !== 1 ? 's' : ''}.`,
-          });
-        });
+        // Note: Toast is handled by onCanvasRestored event from socket
       } catch (error) {
         console.error("Import failed:", error);
         toast({
@@ -304,7 +295,7 @@ export default function CanvasPage() {
     reader.readAsText(file);
 
     if (e.target) e.target.value = '';
-  }, [clearCanvas, addLocalStroke, startStroke, endStroke, toast]);
+  }, [restoreCanvas, toast]);
 
   if (!username) {
     return <UsernameDialog open={true} onSubmit={handleUsernameSubmit} />;
@@ -384,6 +375,7 @@ export default function CanvasPage() {
               onLocalStrokePoint={updateLocalStroke}
               zoom={zoom}
               onZoomChange={setZoom}
+              operationCount={operationCount}
             />
             <CursorOverlay
               cursors={cursors}
