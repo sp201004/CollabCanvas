@@ -109,7 +109,9 @@ A multi-user drawing application where multiple people can draw simultaneously o
 ```
 CollabCanvas/
 ├── client/                          # Frontend React application
-│   ├── public/                      # Static assets
+│   ├── public/
+│   │   ├── diagrams/                # Architecture diagrams (SVG)
+│   │   └── ...                      # Static assets
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ColorPicker/
@@ -163,7 +165,8 @@ CollabCanvas/
 ├── .canvas-data/                    # Persisted canvas files (gitignored)
 │   └── <roomId>.json                # Canvas state per room
 │
-├── ARCHITECTURE.md                  # Technical documentation (1377 lines)
+├── generate_diagrams.sh             # Diagram generation script
+├── ARCHITECTURE.md                  # Technical documentation
 ├── README.md                        # This file
 ├── package.json                     # Dependencies & scripts
 ├── tsconfig.json                    # TypeScript configuration
