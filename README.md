@@ -27,6 +27,12 @@ A multi-user drawing application where multiple people can draw simultaneously o
 
 
 
+
+## 🚀 Deployed Demo
+
+Try the live application here: **[CollabCanvas Demo](https://collabcanvas-demo.vercel.app)**  
+*(Note: This is a placeholder link. Please replace with your actual deployment URL)*
+
 ## ✨ Features
 
 ### Core Drawing Tools
