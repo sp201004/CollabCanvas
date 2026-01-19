@@ -235,9 +235,11 @@ export function DrawingCanvas({
     if (stroke.tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
       ctx.strokeStyle = "rgba(0,0,0,1)";
+      ctx.fillStyle = "rgba(0,0,0,1)";
     } else {
       ctx.globalCompositeOperation = "source-over";
       ctx.strokeStyle = stroke.color;
+      ctx.fillStyle = stroke.color;
     }
 
     // Lookup tool-specific renderer
