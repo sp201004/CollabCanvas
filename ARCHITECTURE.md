@@ -6,11 +6,10 @@ CollabCanvas is a real-time collaborative drawing application built with React, 
 
 ## Table of Contents
 1. [Technical Challenges Overview](#technical-challenges-overview)
-2. [Project Structure](#project-structure)
-3. [Canvas Mastery](#canvas-mastery)
-4. [Real-time Architecture](#real-time-architecture)
-5. [State Synchronization](#state-synchronization)
-6. [Why Socket.io](#why-socketio-over-native-websockets)
+2. [Canvas Mastery](#canvas-mastery)
+3. [Real-time Architecture](#real-time-architecture)
+4. [State Synchronization](#state-synchronization)
+5. [Why Socket.io](#why-socketio-over-native-websockets)
 
 
 ## Technical Challenges Overview
